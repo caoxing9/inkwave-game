@@ -1,8 +1,11 @@
-export default function HomePage() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gray-50 p-6">
-      <h1 className="text-lg font-medium tracking-tight text-gray-700">Teable App Builder</h1>
-      <p className="text-sm text-gray-400">Your app will appear here as it takes shape…</p>
-    </main>
-  );
+"use client";
+
+import { useEffect, useState } from "react";
+
+export default function Home() {
+  const [src, setSrc] = useState<string>();
+  useEffect(() => { setSrc(`/game/index.html${window.location.search}${window.location.hash}`); }, []);
+  return <main className="fixed inset-0 bg-[#0d1020]">
+    {src && <iframe src={src} title="INKWAVE · 墨浪对战" className="h-full w-full border-0" allow="fullscreen; autoplay; clipboard-write" allowFullScreen />}
+  </main>;
 }
