@@ -1,0 +1,142 @@
+{
+  "id": "tblztTPyuPXVV565blw",
+  "name": "联机房间",
+  "description": null,
+  "dbTableName": "\"bse76v2JpRwtMeKsQbi\".\"tblztTPyuPXVV565blw\"",
+  "fields": [
+    {
+      "id": "fldH9wdGhuoBaFtJKqQ",
+      "name": "房间码",
+      "dbFieldName": "Fang_Jian_Ma",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldahhLjcr93ABQJ9OA",
+      "name": "房间名称",
+      "dbFieldName": "Fang_Jian_Ming_Cheng",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldieRiZAfjY8hsrAzV",
+      "name": "房主ID",
+      "dbFieldName": "Fang_Zhu_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldxAjo9m0yvb51fedm",
+      "name": "人数上限",
+      "dbFieldName": "Ren_Shu_Shang_Xian",
+      "type": "number",
+      "description": null,
+      "options": {
+        "formatting": {
+          "type": "decimal",
+          "precision": 2
+        }
+      },
+      "cellValueType": "number",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldEjzUJUbWaQSEmboe",
+      "name": "配置",
+      "dbFieldName": "Pei_Zhi",
+      "type": "longText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldEpftdwDXn6iTtCo8",
+      "name": "状态",
+      "dbFieldName": "Zhuang_Tai",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "等待中",
+        "游戏中",
+        "已结束"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldQixI6Ozsb5g66Iuv",
+      "name": "创建时间",
+      "dbFieldName": "Chuang_Jian_Shi_Jian",
+      "type": "createdTime",
+      "description": null,
+      "options": {
+        "expression": "CREATED_TIME()",
+        "formatting": {
+          "date": "YYYY-MM-DD",
+          "time": "None",
+          "timeZone": "Asia/Singapore"
+        }
+      },
+      "cellValueType": "dateTime",
+      "isLookup": null,
+      "isComputed": true,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldyFL599MiCO0drsU9",
+      "name": "最后活跃",
+      "dbFieldName": "Zui_Hou_Huo_Yue",
+      "type": "date",
+      "description": null,
+      "options": {
+        "formatting": {
+          "date": "YYYY-MM-DD",
+          "time": "None",
+          "timeZone": "Asia/Singapore"
+        }
+      },
+      "cellValueType": "dateTime",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldItFCXoqTkJwfJZGr",
+      "name": "游戏",
+      "dbFieldName": "You_Xi",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "运输船枪战",
+        "QQ飞车",
+        "鹈鹕骑行"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    }
+  ]
+}

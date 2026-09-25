@@ -1,0 +1,63 @@
+{
+  "id": "tbl6fvBaDYLyW2lECRk",
+  "name": "游戏玩家",
+  "description": null,
+  "dbTableName": "\"bse76v2JpRwtMeKsQbi\".\"tbl6fvBaDYLyW2lECRk\"",
+  "fields": [
+    {
+      "id": "fldbdcQPJDlNd1rIkQv",
+      "name": "昵称",
+      "dbFieldName": "Ni_Cheng",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldDqHtEvfFj7B3NKmb",
+      "name": "邮箱",
+      "dbFieldName": "You_Xiang",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldv3a23ZQMal9lRUp1",
+      "name": "头像",
+      "dbFieldName": "Tou_Xiang",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldXE4ARYal0EvsAjF0",
+      "name": "加入时间",
+      "dbFieldName": "Jia_Ru_Shi_Jian",
+      "type": "createdTime",
+      "description": null,
+      "options": {
+        "expression": "CREATED_TIME()",
+        "formatting": {
+          "date": "YYYY-MM-DD",
+          "time": "None",
+          "timeZone": "Asia/Singapore"
+        }
+      },
+      "cellValueType": "dateTime",
+      "isLookup": null,
+      "isComputed": true,
+      "isMultipleCellValue": false
+    }
+  ]
+}

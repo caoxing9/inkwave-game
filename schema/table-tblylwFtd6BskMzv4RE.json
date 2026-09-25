@@ -1,0 +1,121 @@
+{
+  "id": "tblylwFtd6BskMzv4RE",
+  "name": "联机信令",
+  "description": null,
+  "dbTableName": "\"bse76v2JpRwtMeKsQbi\".\"tblylwFtd6BskMzv4RE\"",
+  "fields": [
+    {
+      "id": "fldsj7zTRUS3CahVjDF",
+      "name": "消息ID",
+      "dbFieldName": "Xiao_Xi_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldKSm7RdexIGby3HOP",
+      "name": "房间ID",
+      "dbFieldName": "Fang_Jian_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldVAGNlGrTdIVG7C39",
+      "name": "发送成员ID",
+      "dbFieldName": "Fa_Song_Cheng_Yuan_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldwBvgq1PK61TPvaSV",
+      "name": "接收成员ID",
+      "dbFieldName": "Jie_Shou_Cheng_Yuan_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldovT6BnJI4fHd3HMt",
+      "name": "内容",
+      "dbFieldName": "Nei_Rong",
+      "type": "longText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldauHg7nowFIsVRY6Y",
+      "name": "创建时间",
+      "dbFieldName": "Chuang_Jian_Shi_Jian",
+      "type": "createdTime",
+      "description": null,
+      "options": {
+        "expression": "CREATED_TIME()",
+        "formatting": {
+          "date": "YYYY-MM-DD",
+          "time": "None",
+          "timeZone": "Asia/Singapore"
+        }
+      },
+      "cellValueType": "dateTime",
+      "isLookup": null,
+      "isComputed": true,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldvAXL45GU854HJIFA",
+      "name": "过期时间",
+      "dbFieldName": "Guo_Qi_Shi_Jian",
+      "type": "date",
+      "description": null,
+      "options": {
+        "formatting": {
+          "date": "YYYY-MM-DD",
+          "time": "None",
+          "timeZone": "Asia/Singapore"
+        }
+      },
+      "cellValueType": "dateTime",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldxTvkgAZKUTr18YG9",
+      "name": "类型",
+      "dbFieldName": "Lei_Xing",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "offer",
+        "answer",
+        "ice"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    }
+  ]
+}

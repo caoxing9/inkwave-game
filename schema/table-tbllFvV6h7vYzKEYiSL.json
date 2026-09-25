@@ -1,0 +1,125 @@
+{
+  "id": "tbllFvV6h7vYzKEYiSL",
+  "name": "房间成员",
+  "description": null,
+  "dbTableName": "\"bse76v2JpRwtMeKsQbi\".\"tbllFvV6h7vYzKEYiSL\"",
+  "fields": [
+    {
+      "id": "fldqf02uJKmPdZN9x0Z",
+      "name": "成员标识",
+      "dbFieldName": "Cheng_Yuan_Biao_Shi",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldTS8NLDL3XemO9mMw",
+      "name": "房间ID",
+      "dbFieldName": "Fang_Jian_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldxmWFeohDYj2WsC8u",
+      "name": "玩家ID",
+      "dbFieldName": "Wan_Jia_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldQRuq0azhbyJXynKI",
+      "name": "显示名称",
+      "dbFieldName": "Xian_Shi_Ming_Cheng",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldzVPABEcsZkRSTE6Y",
+      "name": "连接ID",
+      "dbFieldName": "Lian_Jie_ID",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldwdEcbsvP0yqaPiBj",
+      "name": "准备",
+      "dbFieldName": "Zhun_Bei",
+      "type": "checkbox",
+      "description": null,
+      "options": {},
+      "cellValueType": "boolean",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldisMS2YIrsMBPRhzu",
+      "name": "队伍",
+      "dbFieldName": "Dui_Wu",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldINkNgVfBf2b1uqDX",
+      "name": "状态",
+      "dbFieldName": "Zhuang_Tai",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "在线",
+        "离线"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldUOxISX9KfVOVZKSJ",
+      "name": "心跳时间",
+      "dbFieldName": "Xin_Tiao_Shi_Jian",
+      "type": "date",
+      "description": null,
+      "options": {
+        "formatting": {
+          "date": "YYYY-MM-DD",
+          "time": "None",
+          "timeZone": "Asia/Singapore"
+        }
+      },
+      "cellValueType": "dateTime",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    }
+  ]
+}
