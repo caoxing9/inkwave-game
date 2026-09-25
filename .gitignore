@@ -9,6 +9,8 @@ node_modules
 __MACOSX
 out
 build
+!public/game/vendor/three/build/
+!public/game/vendor/three/build/*.js
 dist
 coverage
 .teable
