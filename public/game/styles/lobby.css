@@ -1,0 +1,52 @@
+/* 联机大厅 */
+.iwl { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(20, 16, 50, 0.45), rgba(8, 8, 24, 0.82)); font-family: 'Rubik', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; color: #fff; overflow: auto; }
+.iwl.hidden { display: none; }
+.iwl-card { width: min(560px, 100%); background: rgba(24, 20, 52, 0.94); border: 3px solid rgba(255, 255, 255, 0.12); border-radius: 22px;
+  padding: 24px 28px; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55); }
+.iwl-wide { width: min(860px, 100%); }
+.iwl h2 { font-family: 'Titan One', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-weight: 400; font-size: 34px; margin: 0 0 10px; letter-spacing: 1px; }
+.iwl h2 small { font-size: 15px; opacity: 0.6; margin-left: 6px; }
+.iwl h3 { margin: 0 0 8px; font-size: 18px; }
+.iwl h3 small { font-weight: 500; opacity: 0.65; font-size: 13px; margin-left: 6px; }
+.iwl-muted { color: rgba(255, 255, 255, 0.62); font-size: 14px; line-height: 1.5; }
+.iwl-tip { color: rgba(255, 255, 255, 0.5); font-size: 12.5px; margin: 14px 0 0; }
+.iwl-warn { background: rgba(255, 170, 40, 0.15); border: 1px solid rgba(255, 170, 40, 0.5); border-radius: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+.iwl-error { color: #ff7a8a; font-weight: 600; margin: 10px 0 0; }
+.iwl code { background: rgba(255, 255, 255, 0.1); padding: 1px 6px; border-radius: 6px; font-size: 13px; user-select: all; }
+.iwl-field { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.iwl-field > span { width: 44px; color: rgba(255, 255, 255, 0.7); }
+.iwl input, .iwl select { font: inherit; font-size: 16px; color: #fff; background: #2b2560; border: 2px solid #463d8c; border-radius: 12px; padding: 8px 12px; outline: none; }
+.iwl input:focus, .iwl select:focus { border-color: #ffd21a; }
+.iwl-field input, .iwl-field select { flex: 1; }
+.iwl-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+.iwl-end { justify-content: flex-end; }
+.iwl-opts label { display: inline-flex; gap: 8px; align-items: center; color: rgba(255, 255, 255, 0.75); font-size: 14px; }
+.iwl-code { width: 130px; text-transform: uppercase; letter-spacing: 6px; font-weight: 800; text-align: center; }
+.iwl-btn { font: inherit; font-weight: 800; font-size: 16px; color: #fff; background: #3b3480; border: 0; border-radius: 14px; padding: 10px 20px; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35); transition: transform 0.08s, background 0.15s; }
+.iwl-btn:hover:not(:disabled) { background: #4a42a0; transform: translateY(-1px); }
+.iwl-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
+.iwl-btn:disabled { opacity: 0.45; cursor: default; }
+.iwl-primary { background: linear-gradient(135deg, #ffb81a, #ff6a1a); color: #231040; }
+.iwl-primary:hover:not(:disabled) { background: linear-gradient(135deg, #ffc93a, #ff7d34); }
+.iwl-ghost { background: transparent; box-shadow: none; border: 2px solid rgba(255, 255, 255, 0.25); }
+.iwl-small { padding: 4px 12px; font-size: 13px; border-radius: 10px; }
+.iwl-head { margin-bottom: 14px; }
+.iwl-roomcode { display: inline-block; background: #ffd21a; color: #231040; padding: 0 14px; border-radius: 12px; letter-spacing: 4px; margin-left: 6px; }
+.iwl-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 700px) { .iwl-teams { grid-template-columns: 1fr; } }
+.iwl-team { border-radius: 16px; padding: 12px 14px; background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.08); }
+.iwl-team--0 h3 { color: #6fa0ff; } .iwl-team--1 h3 { color: #ff7a6a; }
+.iwl-team ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.iwl-team li { display: flex; gap: 8px; align-items: center; background: rgba(0, 0, 0, 0.2); border-radius: 10px; padding: 7px 10px; font-size: 14px; }
+.iwl-team li span { color: rgba(255, 255, 255, 0.6); font-size: 12.5px; }
+.iwl-team li em { margin-left: auto; font-style: normal; font-size: 12px; }
+.iwl-host { font-style: normal; font-size: 11px; background: #ffd21a; color: #231040; border-radius: 6px; padding: 1px 6px; font-weight: 800; }
+.iwl-self { color: #ffd21a; }
+.iwl-conn--direct { color: #5fe39a; } .iwl-conn--relay { color: #ffc44d; } .iwl-conn--connecting { color: rgba(255, 255, 255, 0.55); }
+.iwl-toast { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 60; background: rgba(20, 16, 44, 0.95); color: #fff;
+  padding: 10px 18px; border-radius: 12px; font: 600 15px 'Rubik', 'PingFang SC', 'Microsoft YaHei', sans-serif; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+
+/* 主菜单多了"联机对战"一项：说明文字下移一格 */
+.iw-main__desc { top: calc(52% + var(--u) * 22.3) !important; }
