@@ -21,6 +21,14 @@ export class Lobby {
     document.body.appendChild(this.el);
     this.el.addEventListener('keydown', (e) => e.stopPropagation());
     this._renderT = 0;
+    this.metricsTimer = setInterval(() => {
+      const c = this.client;
+      const status = c?.status() || [];
+      const pings = status.map(s => s.ping).filter(Number.isFinite);
+      const queued = c?.channels ? [...c.channels.values()].reduce((n, ch) => n + (ch.dataChannel?.bufferedAmount || 0), 0) + [...(c.stateChannels?.values() || [])].reduce((n, ch) => n + ch.bufferedAmount, 0) : 0;
+      const fast = !!c?.targets.length && c.targets.every(m => c.stateChannels?.get(m.id)?.readyState === 'open' || c.stCh?.get(m.id)?.readyState === 'open');
+      if (parent !== window) parent.postMessage({ type: 'inkwave-metrics', active: this.inRoom && G.mode === 'match', fps: Math.round(game.fps || 0), ping: pings.length ? Math.max(...pings) : null, queued: Math.round(queued / 1024), fast, host: !!c?.isHost }, location.origin);
+    }, 1000);
   }
 
   get inRoom() { return !!this.client && !this.client.closed; }

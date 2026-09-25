@@ -1,4 +1,6 @@
 // Public signaling follows the transport-ship app: PeerJS Cloud + WebRTC, no TURN relay.
+const STATE_BACKLOG = 16 * 1024;
+const ICE = [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:global.stun.twilio.com:3478' }];
 const PREFIX = 'inkwave-appjcivu396tfuzemb1-v1-';
 const weapons = new Set(['shooter', 'roller', 'charger', 'blaster']);
 const cleanName = v => String(v || '玩家').replace(/[^\p{L}\p{N}_ .-]/gu, '').trim().slice(0, 16) || '玩家';
@@ -19,6 +21,10 @@ export class PublicClient {
     this.profile = { id: this.id, name: cleanName(name), weapon: weapons.has(weapon) ? weapon : 'shooter', team: 0 };
     this.room = { code, host: PREFIX + code, members: host ? [this.profile] : [], settings: { mapId: 'tidewater', duration: 180, difficulty: 'normal' }, started: false, relayMembers: [] };
     this.channels = new Map(); this.latency = new Map(); this.lastPong = new Map(); this.pending = new Map();
+    this.statePeers = new Map(); this.stateChannels = new Map(); this.statePending = new Map();
+    this.stateSeq = new Map(); this.stateReceived = new Map(); this.signalChains = new Map();
+    this.replacedStates = 0;
+    this.stateTimer = setInterval(() => this.flushStates(), 16);
     this.closed = false;
     this.onPacket = () => {}; this.onRoom = () => {}; this.onStatus = () => {}; this.onError = () => {};
     this.unload = () => this.close(); addEventListener('pagehide', this.unload);
@@ -67,6 +73,7 @@ export class PublicClient {
         const a = this.members.filter(m => m.team === 0).length;
         this.room.members.push({ id, name: cleanName(conn.metadata.name), weapon: weapons.has(conn.metadata.weapon) ? conn.metadata.weapon : 'shooter', team: a <= this.members.length - a ? 0 : 1 });
         conn.send({ _iw: 'welcome', room: this.room }); this.broadcast();
+        this.initState(id, true).catch(() => {});
       }
       this.onStatus();
     });
@@ -78,6 +85,10 @@ export class PublicClient {
       }
       if (!this.isHost && d._iw === 'reject') { this.fail(d.message); return; }
       if (!this.members.some(m => m.id === id)) return;
+      if (d._iw === 'state-signal') {
+        this.signalChains.set(id, (this.signalChains.get(id) || Promise.resolve()).then(() => this.stateSignal(id, d.signal)).catch(() => {})); return;
+      }
+      if (d.t === 'st') { this.receiveState(id, d); return; }
       if (d._iw === 'ping') { conn.send({ _iw: 'pong', at: d.at }); return; }
       if (d._iw === 'pong') { this.latency.set(id, Math.max(0, Date.now() - d.at)); this.lastPong.set(id, Date.now()); this.onStatus(); return; }
       if (d._iw === 'request' && this.isHost) {
@@ -90,10 +101,66 @@ export class PublicClient {
     });
     conn.on('error', () => this.onError('玩家连接异常，请检查网络。', false));
     conn.on('close', () => {
-      this.channels.delete(id); if (this.closed) return;
+      this.channels.delete(id); this.statePeers.get(id)?.close(); this.statePeers.delete(id); this.stateChannels.delete(id); this.statePending.delete(id); if (this.closed) return;
       if (this.isHost) { this.room.members = this.members.filter(m => m.id !== id); this.broadcast(); this.onPacket({ t: 'leave' }, id); }
       else this.fail('房主已离开或连接中断，请重新加入房间。');
     });
+  }
+  async initState(id, offer = false) {
+    if (this.statePeers.has(id)) return this.statePeers.get(id);
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    this.statePeers.set(id, pc);
+    pc.onicecandidate = e => { if (e.candidate) this.send({ _iw: 'state-signal', signal: { candidate: e.candidate.toJSON() } }, id); };
+    const bind = ch => {
+      this.stateChannels.set(id, ch);
+      ch.onmessage = e => { try { this.receiveState(id, JSON.parse(e.data)); } catch {} };
+      ch.onopen = () => this.onStatus();
+      ch.onclose = () => { if (this.stateChannels.get(id) === ch) this.stateChannels.delete(id); this.onStatus(); };
+    };
+    pc.ondatachannel = e => bind(e.channel);
+    if (offer) {
+      bind(pc.createDataChannel('inkwave-state', { ordered: false, maxRetransmits: 0 }));
+      await pc.setLocalDescription(await pc.createOffer());
+      this.send({ _iw: 'state-signal', signal: { type: 'offer', sdp: pc.localDescription.sdp } }, id);
+    }
+    return pc;
+  }
+  async stateSignal(id, signal) {
+    if (this.closed || !signal || !this.connected(id)) return;
+    const pc = await this.initState(id);
+    if (signal.candidate) {
+      if (pc.remoteDescription) await pc.addIceCandidate(signal.candidate);
+      else (pc.queuedIce ||= []).push(signal.candidate);
+      return;
+    }
+    if (signal.type !== 'offer' && signal.type !== 'answer') return;
+    await pc.setRemoteDescription(signal);
+    for (const ice of pc.queuedIce || []) await pc.addIceCandidate(ice);
+    pc.queuedIce = [];
+    if (signal.type === 'offer') {
+      await pc.setLocalDescription(await pc.createAnswer());
+      this.send({ _iw: 'state-signal', signal: { type: 'answer', sdp: pc.localDescription.sdp } }, id);
+    }
+  }
+  receiveState(id, data) {
+    if (this.closed || !this.members.some(m => m.id === id) || data.t !== 'st' || !Array.isArray(data.a)) return;
+    if (Number.isSafeInteger(data.q)) {
+      if (data.q <= (this.stateReceived.get(id) || 0)) return;
+      this.stateReceived.set(id, data.q);
+    }
+    this.onPacket(data, id);
+  }
+  flushStates() {
+    if (this.closed) return;
+    for (const [id, actors] of this.statePending) {
+      if (!actors.size) continue;
+      const fast = this.stateChannels.get(id), reliable = this.channels.get(id);
+      const ch = fast?.readyState === 'open' ? fast : reliable?.open ? reliable : null;
+      if (!ch || (ch.dataChannel?.bufferedAmount ?? ch.bufferedAmount ?? 0) > STATE_BACKLOG) continue;
+      const q = (this.stateSeq.get(id) || 0) + 1;
+      const packet = { t: 'st', a: [...actors.values()], q };
+      try { ch.send(ch === fast ? JSON.stringify(packet) : packet); this.stateSeq.set(id, q); actors.clear(); } catch {}
+    }
   }
   _applyRoom(room) { this.room = room; this.onRoom(room); this.onStatus(); }
   broadcast() { this.send({ _iw: 'room', room: this.room }); this.onRoom(this.room); this.onStatus(); }
@@ -101,8 +168,14 @@ export class PublicClient {
     if (this.closed) return;
     for (const m of this.targets) {
       if (to && to !== m.id) continue;
+      if (data.t === 'st' && Array.isArray(data.a)) {
+        const actors = this.statePending.get(m.id) || new Map();
+        for (const pose of data.a) { if (actors.has(pose[0])) this.replacedStates++; actors.set(pose[0], pose); }
+        this.statePending.set(m.id, actors);
+        continue;
+      }
       const c = this.channels.get(m.id);
-      if (c?.open && (data.t !== 'st' || (c.dataChannel?.bufferedAmount || 0) < 64000)) { try { c.send(data); } catch {} }
+      if (c?.open) { try { c.send(data); } catch {} }
     }
   }
   action(id, action, extra) {
@@ -141,7 +214,7 @@ export class PublicClient {
   }
   close() {
     if (this.closed) return;
-    this.closed = true; clearTimeout(this.deadline); clearInterval(this.heartbeat); removeEventListener('pagehide', this.unload);
+    this.closed = true; clearInterval(this.stateTimer); for (const pc of this.statePeers.values()) pc.close(); this.statePeers.clear(); this.statePending.clear(); clearTimeout(this.deadline); clearInterval(this.heartbeat); removeEventListener('pagehide', this.unload);
     for (const p of this.pending.values()) { clearTimeout(p.timer); p.reject(new Error('连接已关闭')); }
     this.pending.clear(); for (const c of this.channels.values()) c.close(); this.peer?.destroy();
   }
