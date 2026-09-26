@@ -1,5 +1,6 @@
 const DEFAULT_SERVER = 'socket-server.app.teable.cn:8443';
 const MAX_PACKET = 48 * 1024;
+const PONG_TIMEOUT = 6000;
 export class WssClient {
   static server(value = DEFAULT_SERVER) {
     const u = new URL(/^[a-z]+:\/\//i.test(value) ? value : `https://${value}`);
@@ -13,6 +14,7 @@ export class WssClient {
     this.server = WssClient.server(server); this.serverRelays = true; this.closed = false;
     this.room = { members: [], settings: {}, host: '' }; this.id = ''; this.pending = new Map(); this.states = new Map(); this.events = []; this.eventBytes = 0;
     this.onRoom = ()=>{}; this.onStatus = ()=>{}; this.onPacket = ()=>{}; this.onError = ()=>{};
+    this.pendingPings=new Map();this.lastPongAt=0;
     this.eventBudget=180;this.byteBudget=800*1024;this.budgetAt=performance.now();
     this.unload = ()=>this.close(); addEventListener('pagehide',this.unload);
   }
@@ -29,15 +31,22 @@ export class WssClient {
     this.ws=new WebSocket(`wss://${this.server}/ws`);
     this.ws.onopen=()=>this.ws.send(JSON.stringify({t:'hello',v:1,game:'inkwave',cap:10,...hello}));
     this.ws.onmessage=e=>{
+      if(this.closed)return;
       let m;try{m=JSON.parse(e.data);}catch{return;}
       if(m.t==='welcome'){
         if(m.room?.game!=='inkwave'){this.fail('服务器尚未支持墨浪，请等待兼容版本部署。');return;}
         clearTimeout(this.deadline);this.id=m.me;this._applyRoom(m.room);this.rejectOpen=null;
         this.flushTimer=setInterval(()=>this.flush(),50);
-        this.pingTimer=setInterval(()=>{if(this.connected())this.enqueue({t:'ping',c:Date.now(),r:this.rtt??-1});},1000);
+        this.lastPongAt=performance.now();this.heartbeat();
+        this.pingTimer=setInterval(()=>this.heartbeat(),1000);
         resolve();return;
       }
-      if(m.t==='pong'){this.rtt=Math.max(0,Date.now()-Number(m.c));this.onStatus();return;}
+      if(m.t==='pong'){
+        const sent=this.pendingPings.get(m.c);if(sent===undefined)return;
+        this.pendingPings.delete(m.c);this.lastPongAt=performance.now();this.rtt=Math.max(0,this.lastPongAt-sent);
+        for(const [key,at] of this.pendingPings)if(at<=sent)this.pendingPings.delete(key);
+        this.rtt=Math.round(this.rtt);this.onStatus();return;
+      }
       if(m.t==='room'){const room=m.room || m;this._applyRoom(room);return;}
       if(m.t==='iwack'){
         const p=this.pending.get(m.q);if(!p)return;clearTimeout(p.timer);this.pending.delete(m.q);
@@ -47,17 +56,22 @@ export class WssClient {
       if(m.t==='iwst' && m.m===this.room.match?.id){
         const groups=new Map();for(const row of m.rows||[]){const a=groups.get(row.f)||[];a.push(row.a);groups.set(row.f,a);}for(const [id,a] of groups)this.onPacket({t:'st',a},id);return;
       }
-      if(m.t==='error' || m.t==='bye'){const msg=m.msg||m.reason||'服务器关闭了连接';if(m.fatal||m.t==='bye')this.fail(msg);else this.onError(msg,false);}
+      if(m.t==='error' || m.t==='bye')this.fail(m.msg||m.reason||'服务器拒绝了游戏消息，请重新加入房间。');
     };
     this.ws.onerror=()=>{if(this.rejectOpen)this.fail('无法连接 WSS 服务器，请检查网络或等待服务上线。');};
     this.ws.onclose=()=>{if(!this.closed)this.fail('与服务器连接中断，本局已退出，请重新加入房间。');};
   });}
+  heartbeat(){
+    if(!this.connected())return;
+    if(performance.now()-this.lastPongAt>=PONG_TIMEOUT){this.fail('服务器心跳超时，本局已退出，请重新加入房间。');return;}
+    const c=Date.now();this.pendingPings.set(c,performance.now());this.enqueue({t:'ping',c,r:this.rtt??-1});
+  }
   _applyRoom(raw){
     if(!raw || raw.game!=='inkwave'){this.fail('服务器返回不兼容的游戏房间。');return;}
     const previous=this.room;this.room={...raw,settings:raw.cfg||{},started:!!raw.match?.started,relayMembers:[]};
-    for(const m of previous.members||[])if(!raw.members.some(n=>n.id===m.id))this.onPacket({t:'leave'},m.id);
+    // Membership updates are not leave events: only the reliable iw leave triggers adoption.
     this.onRoom(this.room);this.onStatus();
-    if(previous.match && !raw.match){this.states.clear();if(raw.result?.reason)this.onError(`本局已结束：${raw.result.reason}`,true);}
+    if(previous.match && !raw.match){this.states.clear();if(raw.result?.reason)this.fail(`本局已结束：${raw.result.reason}`);}
   }
   async request(op,d={}){
     if(!this.connected())throw new Error('服务器连接已断开');
@@ -95,6 +109,6 @@ export class WssClient {
     for(const [to,actors] of this.states){if(this.ws.bufferedAmount>16384)break;if(!actors.size)continue;const text=JSON.stringify({t:'iw',m:this.room.match.id,to:to||undefined,d:{t:'st',a:[...actors.values()]}});const bytes=new TextEncoder().encode(text).length;if(bytes>MAX_PACKET){this.fail('位置消息过大，已退出房间。');return;}if(bytes>this.byteBudget)break;this.byteBudget-=bytes;this.ws.send(text);actors.clear();}
     this.onStatus();
   }
-  fail(message){this.rejectOpen?.(new Error(message));this.rejectOpen=null;this.close();this.onError(message,true);}
-  close(){if(this.closed)return;this.closed=true;clearTimeout(this.deadline);clearInterval(this.flushTimer);clearInterval(this.pingTimer);removeEventListener('pagehide',this.unload);for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('连接已关闭'));}this.pending.clear();this.ws?.close();this.events=[];this.states.clear();}
+  fail(message){if(this.closed)return;this.rejectOpen?.(new Error(message));this.rejectOpen=null;this.close();this.onError(message,true);}
+  close(){if(this.closed)return;this.closed=true;this.rtt=undefined;this.pendingPings.clear();clearTimeout(this.deadline);clearInterval(this.flushTimer);clearInterval(this.pingTimer);removeEventListener('pagehide',this.unload);for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('连接已关闭'));}this.pending.clear();this.ws?.close();this.events=[];this.states.clear();}
 }
