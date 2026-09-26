@@ -30,6 +30,28 @@ const fs = require('node:fs');
  assert.equal(host.states.get('').size,1);host.ws.bufferedAmount=0;host.flush();assert.equal(host.ws.sent.at(-1).d.a[0][1],99);
  const before=host.ws.sent.length;host.send({t:'sp',s:Array.from({length:600},()=>[1,2,3,1,0,0,0])});
  const splats=host.ws.sent.slice(before);assert.equal(splats.length,3);assert.equal(splats.reduce((n,p)=>n+p.d.s.length,0),600);assert(splats.every(p=>p.d.s.length<=256&&Buffer.byteLength(JSON.stringify(p))<=49152));
+ const leaves=[];host.onPacket=(d,from)=>{if(d.t==='leave')leaves.push(from);};
+ host.ws.message({t:'iw',m:'match1',f:'p2',d:{t:'leave'}});
+ host.ws.message({t:'room',room:{...running,members:members.filter(m=>m.id!=='p2')}});
+ assert.deepEqual(leaves,['p2']);
+ const retry=clients[3];const denied=retry.request('profile',{team:0});const q=retry.ws.sent.at(-1).q;
+ retry.ws.message({t:'iwack',q,code:'team_full',error:'队伍已满'});await assert.rejects(denied,/队伍已满/);assert(!retry.closed);
+ const again=retry.request('profile',{weapon:'roller'});retry.ws.message({t:'iwack',q:retry.ws.sent.at(-1).q,room:running});await again;assert(!retry.closed);
+ for(const [index,code] of [[4,'packet_size'],[5,'actor_owner'],[6,'stale_match']]){
+  const c=clients[index];let failures=0;c.onError=(_,fatal)=>{assert(fatal);failures++;};
+  c.ws.message({t:'error',code,msg:'游戏消息被拒绝'});assert(c.closed);assert.equal(failures,1);
+  c.ws.message({t:'error',code,msg:'重复错误'});assert.equal(failures,1);
+ }
+ const heartbeat=clients[7];const ping=heartbeat.ws.sent.find(p=>p.t==='ping');
+ heartbeat.ws.message({t:'pong',c:ping.c});assert(Number.isFinite(heartbeat.rtt));
+ heartbeat.lastPongAt=performance.now()-6100;
+ heartbeat.ws.message({t:'pong',c:ping.c}); // Replay must not revive the clock.
+ heartbeat.ws.message({t:'room',room:running}); // Other messages do not replace a pong.
+ let timeout='';heartbeat.onError=(msg,fatal)=>{assert(fatal);timeout=msg;};heartbeat.heartbeat();
+ assert(heartbeat.closed);assert.match(timeout,/心跳超时/);assert.equal(heartbeat.rtt,undefined);
+ const hostGone=clients[8];let ended=false;hostGone.onError=(_,fatal)=>ended=fatal;
+ hostGone.ws.message({t:'room',room:{...running,match:null,result:{reason:'房主离开'}}});assert(ended&&hostGone.closed);
+ console.log('PASS single reliable leave, retryable iwack, fatal game errors, pong timeout/replay protection, host termination');
  let fatal=false;clients[2].onError=(_,f)=>fatal=f;clients[2].ws.close();assert(fatal&&clients[2].closed);
  for(const c of clients)c.close();
  const bad=WssClient.create('test','shooter');Socket.instances.at(-1).message({t:'welcome',me:'bad',room:{...room,game:'ship'}});await assert.rejects(bad,/尚未支持/);
