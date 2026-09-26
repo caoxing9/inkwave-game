@@ -120,8 +120,8 @@ export class Match {
     this.stateT += dt;
     switch (this.state) {
       case 'intro':
-        // online: the host starts the round once every player has the map loaded (or after 20 s)
-        if (this.net) { if (this.net.isHost && this.stateT > 4.2 && (this.net.everyoneLoaded() || this.stateT > 20)) { this.setState('playing'); this.net.hostState('playing'); } }
+        // online: never start simulation before every remaining member has loaded.
+        if (this.net) { if (this.net.isHost && this.stateT > 4.2 && this.net.everyoneLoaded()) { this.setState('playing'); this.net.hostState('playing'); } }
         else if (this.stateT > 4.2) this.setState('playing');
         break;
       case 'playing': {

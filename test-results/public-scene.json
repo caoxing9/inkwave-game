@@ -1,0 +1,14 @@
+{
+  "transport": "real PeerJS Cloud + real WebRTC",
+  "scene": "original game, low quality, simulation stepped for software GPU",
+  "checks": [
+    "real share URL opens prefilled public lobby; two browsers joined",
+    "10 roles, 5v5, 2 players + 8 bots; early guest load readiness preserved",
+    "host starts only when both scenes loaded; guest receives playing",
+    "actual scene actor position received",
+    "actual scene paint reaches guest exactly once",
+    "leave clears room/key in outer URL and retains mode"
+  ],
+  "success": true,
+  "errors": []
+}

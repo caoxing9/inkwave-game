@@ -61,11 +61,19 @@ export class NetSession {
     return { t: 'start', mapId: settings.mapId, duration: settings.duration, difficulty: settings.difficulty, palette: (Math.random() * TEAM_PALETTES.length) | 0, roster };
   }
 
+  // Reset readiness before either side starts asynchronous map loading, not at attach.
+  prepare() {
+    this.match = null; this.byId.clear(); this.loaded = new Set();
+    this.splatBuf.length = 0; this.hitAcc.clear();
+    this.stateT = this.splatT = this.clockT = 0;
+  }
+
   // Match.setup 之后调用：记录每个角色的归属
   attach(match) {
     this.match = match;
     this.byId.clear();
-    this.loaded = new Set([this.me]);
+    this.loaded.add(this.me);
+    this._wrapPaint();
     this.splatBuf.length = 0;
     for (const a of match.actors) {
       this.byId.set(a.netId, a);
