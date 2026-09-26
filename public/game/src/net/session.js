@@ -180,6 +180,9 @@ export class NetSession {
       r.buf = r.buf.slice(-1);
       a.pos.set(last[1], last[2], last[3]);
     }
+    // A render frame can run before the first snapshot. Restore the actor that
+    // was hidden while waiting; otherwise it stays invisible until respawn.
+    a.character.setVisible(true);
     const tele = Math.hypot(sb[1] - sa[1], sb[3] - sa[3]) > 5;
     const L = (x, y) => (tele ? y : x + (y - x) * k);
     a.pos.set(L(sa[1], sb[1]), L(sa[2], sb[2]), L(sa[3], sb[3]));
@@ -311,6 +314,7 @@ export class NetSession {
     a.owner = owner;
     if (owner === this.me) {
       a.netAuth = true; a.remote = null; a.isBot = true;
+      a.character.setVisible(a.alive);
       a.bot = this.match.makeBot(a);
       if (!a.alive) a.respawnTimer = Math.min(a.respawnTimer, 2);
     } else if (!a.remote) a.remote = { buf: [], firing: false, rolling: false, charge: 0, subAim: false };

@@ -35,6 +35,11 @@ const assert = require('node:assert/strict');
   report.checks.push('real share URL opens prefilled public lobby; two browsers joined');console.log('TWO_JOINED');
   // Deliberately delay host map attachment: guest ld must survive host attach.
   await frames[0].evaluate(()=>{const net=__inkwave.lobby.session;window.preparePaint=__G.paint;const start=__inkwave.startMatch.bind(__inkwave);__inkwave.startMatch=async o=>{await new Promise(r=>setTimeout(r,1500));return start(o);};});
+  // Run the first remote render tick before any network snapshot can arrive.
+  for(const f of frames)await f.evaluate(()=>{
+    const net=__inkwave.lobby.session,attach=net.attach.bind(net);
+    net.attach=m=>{attach(m);for(const a of m.actors)if(a.remote)net.remoteUpdate(a,1/60);};
+  });
   await frames[0].locator('#iwl-start').click();
   for(const f of frames)await f.waitForFunction(()=>__G.mode==='match'&&__G.actors.length===10,null,{timeout:60000});
   await frames[0].waitForFunction(()=>__inkwave.lobby.session.everyoneLoaded(),null,{timeout:10000});
@@ -46,7 +51,8 @@ const assert = require('node:assert/strict');
   report.checks.push('host starts only when both scenes loaded; guest receives playing');
   const local=await frames[0].evaluate(()=>{const a=__G.local;a.pos.x+=0.75;__inkwave.lobby.session.update(0.06);return {id:a.netId,x:a.pos.x};});
   await frames[1].waitForFunction(({id,x})=>{const a=__inkwave.lobby.session.byId.get(id);return a.remote.buf.some(b=>Math.abs(b.s[1]-x)<0.002);},local);
-  report.checks.push('actual scene actor position received');
+  assert.equal(await frames[1].evaluate(id=>{const net=__inkwave.lobby.session,a=net.byId.get(id);net.remoteUpdate(a,1/60);return a.character.root.visible;},local.id),true);
+  report.checks.push('actual scene actor position received and initially hidden character visible again');
   await frames[1].evaluate(()=>{window.splatsReceived=0;const net=__inkwave.lobby.session;const orig=net._onSplats.bind(net);net._onSplats=d=>{splatsReceived+=d.s.length;return orig(d);};});
   await frames[0].evaluate(()=>{const a=__G.local;__G.paint.splat(a.pos.clone(),0.5,a.team,{seed:0.125});__inkwave.lobby.session._flushSplats();});
   await frames[1].waitForFunction(()=>splatsReceived>0);assert.equal(await frames[1].evaluate(()=>splatsReceived),1);

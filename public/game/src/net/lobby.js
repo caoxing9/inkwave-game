@@ -6,6 +6,7 @@ import { PublicClient } from './public.js';
 import { WssClient } from './wss.js';
 import { NetSession } from './session.js';
 import { readInvite, inviteUrl } from './invite.js';
+import { PeerDiagnostics } from './peer-diagnostics.js';
 
 const WEAPON_ZH = { shooter: '喷溅枪', roller: '滚筒刷', charger: '蓄力狙', blaster: '爆破枪' };
 const MAP_ZH = { tidewater: '潮汐广场', kelpline: '海带码头', sunset: '黄昏潮汐广场' };
@@ -63,7 +64,7 @@ export class Lobby {
   // ---------------------------------------------------------------- 入口
   _entry(error = '') {
     const p = this._profile();
-    const code = readInvite().room;
+    const code = this.joinCode ?? readInvite().room;
     this.el.innerHTML = `
       <div class="iwl-card">
         <h2>联机对战 <small>INKWAVE</small></h2>
@@ -83,24 +84,26 @@ export class Lobby {
           <input id="iwl-code" class="iwl-code" maxlength="6" placeholder="房间码" value="${esc(code)}">
           <button class="iwl-btn" id="iwl-join">加入房间</button>
         </div>
-        ${error ? `<p class="iwl-error">${esc(error)}</p>` : ''}
-        <div class="iwl-row iwl-end"><button class="iwl-btn iwl-ghost" id="iwl-back">返回</button></div>
+        <p class="iwl-muted" id="iwl-progress" role="status"></p>
+        ${error ? `<p class="iwl-error" role="alert">${esc(error)}</p>` : ''}
+        <div class="iwl-row iwl-end"><button class="iwl-btn iwl-ghost" id="iwl-diagnostics">导出连接日志</button><button class="iwl-btn iwl-ghost" id="iwl-back">返回</button></div>
       </div>`;
     const $ = (id) => this.el.querySelector('#' + id);
     const name = () => { const n = $('iwl-name').value.trim() || '玩家'; this.game.api.setProfileName(n); return n; };
+    $('iwl-diagnostics').onclick = () => PeerDiagnostics.download();
     $('iwl-weapon').onchange = (e) => this.game.api.setLoadout({ weapon: e.target.value });
     $('iwl-back').onclick = () => { this.hide(); this.game.menus?.show('main'); };
     $('iwl-mode').onchange = e => {
       name(); this.server = $('iwl-server').value; this.key = '';
-      this.mode = e.target.value; this._writeInvite(); this._entry();
+      this.mode = e.target.value; this.joinCode = ''; this._writeInvite(); this._entry();
     };
     const transport = () => this.mode === 'wss' ? WssClient : this.mode === 'local' ? LanClient : PublicClient;
-    $('iwl-create').onclick = () => this._connect(() => transport().create(name(), this._weapon(), $('iwl-server').value));
+    $('iwl-create').onclick = () => this._connect(progress => transport().create(name(), this._weapon(), $('iwl-server').value, progress));
     $('iwl-join').onclick = () => {
       const c = $('iwl-code').value.trim().toUpperCase();
       if (!c) return this._entry('请输入房间码');
       this.server = $('iwl-server').value; this.key = $('iwl-key').value;
-      this._connect(() => transport().join(c, name(), this._weapon(), this.server, this.key));
+      this._connect(progress => transport().join(c, name(), this._weapon(), this.server, this.key, progress));
     };
     $('iwl-code').onkeydown = (e) => { if (e.key === 'Enter') $('iwl-join').click(); };
   }
@@ -121,17 +124,24 @@ export class Lobby {
   }
 
   async _connect(fn) {
+    this.joinCode = this.el.querySelector('#iwl-code').value;
+    this.server = this.el.querySelector('#iwl-server').value;
+    this.key = this.el.querySelector('#iwl-key').value;
     this.el.querySelectorAll('button, input, select').forEach((b) => (b.disabled = true));
     this.el.querySelector('#iwl-create').textContent = '正在连接…';
+    const progress = text => { const el=this.el.querySelector('#iwl-progress'); if(el)el.textContent=text; };
     try {
-      this.client = await fn();
+      this.client = await fn(progress);
     } catch (e) { return this._entry(e.message); }
     this.session = new NetSession(this.client);
     this.client.onRoom = () => this._schedule();
     this.client.onStatus = () => this._schedule();
-    this.client.onError = (msg, fatal) => {
-      if (fatal) { this._drop(); if (G.mode === 'match') this.game.quitToMenu(); this.open().then(() => this._entry(msg)); }
-      else this._toast(msg);
+    this.client.onError = async (msg, fatal) => {
+      if (fatal) {
+        this._drop();
+        if (G.mode === 'match') await this.game.quitToMenu();
+        await this.open(); this._entry(msg);
+      } else this._toast(msg);
     };
     this.session.on((d, from) => {
       if (d.t === 'start' && !this.client.isHost && from === this.client.room.host) this._launch(d);
@@ -194,6 +204,7 @@ export class Lobby {
         </div>
         <div class="iwl-row iwl-end">
           <button class="iwl-btn iwl-ghost" id="iwl-leave">离开房间</button>
+          ${this.mode === 'public' ? '<button class="iwl-btn iwl-ghost" id="iwl-diagnostics">导出连接日志</button>' : ''}
           ${host ? `<button class="iwl-btn iwl-primary" id="iwl-start" ${allOk ? '' : 'disabled'}>${allOk ? '开始对战' : '等待所有人连接…'}</button>`
       : `<span class="iwl-muted">${room.started ? '对战进行中…' : '等待房主开始…'}</span>`}
         </div>
@@ -210,6 +221,7 @@ export class Lobby {
       $('iwl-diff').onchange = (e) => setS('difficulty', e.target.value);
       $('iwl-start').onclick = () => this._hostStart();
     }
+    if ($('iwl-diagnostics')) $('iwl-diagnostics').onclick = () => { c.debug?.flush(); PeerDiagnostics.download(); };
     $('iwl-leave').onclick = () => { this.leave(); this._entry(); };
   }
 
@@ -244,7 +256,7 @@ export class Lobby {
   _drop() {
     this.session?.close();
     this.session = null; this.client = null; G.net = null;
-    this.key = ''; this._writeInvite();
+    this.key = ''; this.joinCode = ''; this._writeInvite();
   }
   leave() { if (this.client) this._drop(); }
 

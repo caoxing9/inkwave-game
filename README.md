@@ -7,7 +7,8 @@
 - 浏览器直连入口：`/?mode=public&lobby=1`。加载原游戏后自动打开大厅；分享链接携带 `mode=public&room=...&lobby=1`，朋友不会误入 WSS。使用真实 PeerJS Cloud 信令与 WebRTC；信令超时会显示错误并允许手动重试，不保证所有 NAT 都能连接。
 - WSS：`socket-server.app.teable.cn:8443/ws`，独立 `inkwave` 房间协议，邀请携带 `mode=wss&server=...&room=...&key=...&lobby=1`。显式 WSS 邀请不会静默降级。
 - 未指定模式时，应用只查询固定默认服务器的 `/status`；`inkwaveProtocol:1` 才选择 WSS，否则选中浏览器直连并明确区分服务器待部署与状态未知。默认选择不是连接成功声明。服务器和口令字段只在 WSS 模式显示。
-- WebRTC 使用独立无序、不重传位置通道，按角色只保留最新值；战斗事件可靠发送。
+- WebRTC 使用独立无序、不重传位置通道，按角色只保留最新值；战斗事件可靠发送。连接管理参考指定的旧运输船应用 `appxgqUvkYHpGGkXtuu/lib/public-peer-client.ts`：区分信令与直连阶段、每条连接30秒超时、最多3次信令恢复且间隔至少5秒。恢复信令不会重复创建玩家连接。
+- 大厅可导出连接日志：本机保留最近7天内5次会话，每次最多400条；只记录连接阶段与ICE状态，不记录SDP、候选IP、密钥和游戏包。
 - 局域网：大厅选择局域网服务器；下载 `/downloads/inkwave-local.zip`，解压执行 `node server.mjs`，所有人访问同一台电脑。下载包也支持10人，直连失败可回退HTTP中转。
 
 WSS 保留浏览器游戏模拟，房主计算机器人。服务器转发消息，客户端跳过旧的房主二次广播。开局将完整10角色名单随请求原子提交。位置按角色合并，涂墨每包最多256项、48KiB。断线明确退出，不声明完整墨迹恢复。服务器地址可在大厅修改。
@@ -21,6 +22,8 @@ WSS 保留浏览器游戏模拟，房主计算机器人。服务器转发消息�
 - `node tests/relay-smoke.cjs`：本地HTTP中转。
 - `node tests/lobby-entry.cjs`：邀请模式优先级、能力状态、WSS字段显隐、URL清理，以及客人先完成加载和切地图后的涂墨绑定。
 - `node tests/public-scene.cjs`：原游戏完整加载、真实公共信令与WebRTC双浏览器分享加入、10角色开局、就绪同步、角色位置与一次涂墨同步；软件GPU下手动步进模拟，不代表设备帧率评测。
+- `node tests/remote-visibility.cjs`：复现并修复首个位置包前隐藏角色后未恢复显示的问题，同时验证死亡和复活。
+- `node tests/peer-lifecycle.cjs`：确定性模拟信令生命周期，验证超时阶段、有限重连、恢复后无重复玩家连接及日志保存；真实通信由独立测试覆盖。
 - `node tests/game-smoke.cjs`：软件GPU加载游戏、局域网建房、10角色开局。
 
 WSS 服务器部署由 PLAYROOM 应用单独处理。此网页发布不代表服务器已部署或10台真实设备性能验收通过。游戏模拟与GPU负载仍取决于玩家设备，尤其是机器人所在房主。
