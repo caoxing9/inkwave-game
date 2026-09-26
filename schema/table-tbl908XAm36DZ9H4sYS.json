@@ -124,6 +124,22 @@
       "isMultipleCellValue": false
     },
     {
+      "id": "fldBAiSynUqMykHkz9F",
+      "name": "验证状态",
+      "dbFieldName": "Yan_Zheng_Zhuang_Tai",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "待验证",
+        "已验证",
+        "失败"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
       "id": "fldcjJ5y2QbBS9qBIa3",
       "name": "所属游戏",
       "dbFieldName": "Suo_Shu_You_Xi",
@@ -132,7 +148,8 @@
       "options": [
         "运输船",
         "QQ飞车",
-        "鹈鹕游戏"
+        "鹈鹕游戏",
+        "墨浪对战"
       ],
       "cellValueType": "string",
       "isLookup": null,
@@ -153,23 +170,8 @@
         "地图",
         "音效",
         "封面",
-        "程序生成"
-      ],
-      "cellValueType": "string",
-      "isLookup": null,
-      "isComputed": null,
-      "isMultipleCellValue": false
-    },
-    {
-      "id": "fldBAiSynUqMykHkz9F",
-      "name": "验证状态",
-      "dbFieldName": "Yan_Zheng_Zhuang_Tai",
-      "type": "singleSelect",
-      "description": null,
-      "options": [
-        "待验证",
-        "已验证",
-        "失败"
+        "程序生成",
+        "字体"
       ],
       "cellValueType": "string",
       "isLookup": null,
