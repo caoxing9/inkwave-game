@@ -23,6 +23,7 @@ import { Match } from './game/match.js';
 import { Minimap } from './game/minimap.js';
 import { Showcase } from './game/showcase.js';
 import { Lobby } from './net/lobby.js';
+import { readInvite } from './net/invite.js';
 import { installI18n } from './i18n.js';
 
 const params = new URLSearchParams(location.search);
@@ -143,7 +144,7 @@ class Game {
     this.menus?.show(params.has('skipTitle') ? 'main' : 'title');
     this._applyAudioVolumes();
     requestAnimationFrame(() => this._loop());
-    if (params.has('autostart')) this.api.startMatch({ mapId: map.id, difficulty: this.settings.difficulty, duration: +params.get('autostart') || this.settings.matchLength });
+    if (!readInvite().open && params.has('autostart')) this.api.startMatch({ mapId: map.id, difficulty: this.settings.difficulty, duration: +params.get('autostart') || this.settings.matchLength });
     this.bootMs = Math.round(performance.now() - t0);
     window.__inkwave = this; // debug/audit hook
     window.__G = G;
@@ -164,6 +165,7 @@ class Game {
       fire: (on) => { this.input.mouse.left = on; },
       freezeBots: () => { for (const a of G.actors) if (a.bot && !a.isLocal) a.bot.update = () => { a.intent.move.set(0, 0, 0); a.intent.fire = false; }; },
     };
+    if (readInvite().open) this.openLobby();
   }
 
   // Build (or rebuild) everything that depends on the stage layout: level, collision, paint atlas, surface material,

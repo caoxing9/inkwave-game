@@ -9,7 +9,19 @@ export default function Home() {
   useEffect(() => {
     setSrc(`/game/index.html${window.location.search}${window.location.hash}`);
     const receive = (e: MessageEvent) => {
-      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow || e.data?.type !== 'inkwave-metrics') return;
+      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
+      if (e.data?.type === 'inkwave-invite' && typeof e.data.search === 'string') {
+        const next = new URLSearchParams(e.data.search);
+        const url = new URL(location.href);
+        for (const key of ['mode', 'room', 'server', 'key', 'lobby']) {
+          url.searchParams.delete(key);
+          if (next.has(key)) url.searchParams.set(key, next.get(key)!);
+        }
+        url.hash = '';
+        history.replaceState(null, '', url.pathname + url.search);
+        return;
+      }
+      if (e.data?.type !== 'inkwave-metrics') return;
       setMetrics(e.data.active ? e.data : null);
     };
     addEventListener('message', receive);

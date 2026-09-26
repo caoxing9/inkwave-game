@@ -5,6 +5,7 @@ import { LanClient, serverAvailable } from './lan.js';
 import { PublicClient } from './public.js';
 import { WssClient } from './wss.js';
 import { NetSession } from './session.js';
+import { readInvite, inviteUrl } from './invite.js';
 
 const WEAPON_ZH = { shooter: '喷溅枪', roller: '滚筒刷', charger: '蓄力狙', blaster: '爆破枪' };
 const MAP_ZH = { tidewater: '潮汐广场', kelpline: '海带码头', sunset: '黄昏潮汐广场' };
@@ -16,7 +17,10 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 export class Lobby {
   constructor(game) {
     this.game = game;
-    this.client = null; this.session = null; this.mode = 'wss';
+    this.client = null; this.session = null;
+    const invite = readInvite();
+    this.mode = invite.mode; this.server = invite.server; this.key = invite.key;
+    this.capability = 'unknown'; this.checkedCapability = false;
     this.el = document.createElement('div');
     this.el.className = 'iwl hidden';
     document.body.appendChild(this.el);
@@ -39,6 +43,16 @@ export class Lobby {
     if (this.inRoom) return this._room();
     this.el.innerHTML = `<div class="iwl-card"><h2>联机对战</h2><p class="iwl-muted">正在检查联机服务器…</p></div>`;
     this.serverOk = await serverAvailable();
+    if (!this.checkedCapability) {
+      try {
+        const response = await fetch('/api/multiplayer-status', { signal: AbortSignal.timeout(5000) });
+        const data = await response.json();
+        this.capability = response.ok && ['ready', 'pending'].includes(data.state) ? data.state : 'unknown';
+      } catch { this.capability = 'unknown'; }
+      this.checkedCapability = true;
+    }
+    // Explicit invitations always win. Unknown capability is not a readiness claim.
+    this.mode ||= this.capability === 'ready' ? 'wss' : 'public';
     this._entry();
   }
   hide() { this.el.classList.add('hidden'); }
@@ -49,15 +63,17 @@ export class Lobby {
   // ---------------------------------------------------------------- 入口
   _entry(error = '') {
     const p = this._profile();
-    const code = new URLSearchParams(location.search).get('room') || (location.hash.match(/room=(\w+)/) || [])[1] || '';
+    const code = readInvite().room;
     this.el.innerHTML = `
       <div class="iwl-card">
         <h2>联机对战 <small>INKWAVE</small></h2>
         <p class="iwl-muted">一人创建房间，把房间码告诉朋友。最多 10 人，空位由机器人补齐。</p>
-        <label class="iwl-field"><span>连接方式</span><select id="iwl-mode"><option value="wss" ${this.mode === 'wss' ? 'selected' : ''}>WSS 专用服务器（10人）</option><option value="public" ${this.mode === 'public' ? 'selected' : ''}>免费信令直连（在线联机）</option>${this.serverOk ? `<option value="local" ${this.mode === 'local' ? 'selected' : ''}>局域网服务器（支持中转）</option>` : ''}</select></label>
-        <label class="iwl-field"><span>服务器</span><input id="iwl-server" value="${esc(new URLSearchParams(location.search).get('server') || 'socket-server.app.teable.cn:8443')}"></label>
-        <label class="iwl-field"><span>房间口令</span><input id="iwl-key" maxlength="4" placeholder="加入 WSS 房间时填写" value="${esc(new URLSearchParams(location.search).get('key') || '')}"></label>
-        <p class="iwl-muted">WSS 模式需要服务器已部署墨浪兼容版本。WebRTC 备用模式需要双方网络允许直连。也可<a href="/downloads/inkwave-local.zip" download>下载局域网版</a>自托管。</p>
+        <label class="iwl-field"><span>连接方式</span><select id="iwl-mode"><option value="wss" ${this.mode === 'wss' ? 'selected' : ''}>WSS 专用服务器（10人）</option><option value="public" ${this.mode === 'public' ? 'selected' : ''}>浏览器直连（最多10人）</option>${this.serverOk ? `<option value="local" ${this.mode === 'local' ? 'selected' : ''}>局域网服务器（支持中转）</option>` : ''}</select></label>
+        <div id="iwl-wss-fields" ${this.mode === 'wss' ? '' : 'hidden'}>
+          <label class="iwl-field"><span>服务器</span><input id="iwl-server" value="${esc(this.server)}"></label>
+          <label class="iwl-field"><span>房间口令</span><input id="iwl-key" maxlength="4" placeholder="加入 WSS 房间时填写" value="${esc(this.key)}"></label>
+        </div>
+        <p class="iwl-muted">${this.capability === 'ready' ? '默认专用服务器已公布墨浪协议支持。' : this.capability === 'pending' ? '专用服务器待部署墨浪版本。' : '暂时无法确认专用服务器状态。'} 浏览器直连需要先成功连接公共信令并建房，不保证不同网络都能直连。也可<a href="/downloads/inkwave-local.zip" download>下载局域网版</a>自托管。</p>
         <label class="iwl-field"><span>昵称</span><input id="iwl-name" maxlength="16" value="${esc(p.name || '玩家')}"></label>
         <label class="iwl-field"><span>武器</span>${this._weaponSelect(this._weapon())}</label>
         <div class="iwl-row">
@@ -74,15 +90,30 @@ export class Lobby {
     const name = () => { const n = $('iwl-name').value.trim() || '玩家'; this.game.api.setProfileName(n); return n; };
     $('iwl-weapon').onchange = (e) => this.game.api.setLoadout({ weapon: e.target.value });
     $('iwl-back').onclick = () => { this.hide(); this.game.menus?.show('main'); };
-    $('iwl-mode').onchange = e => { this.mode = e.target.value; };
+    $('iwl-mode').onchange = e => {
+      name(); this.server = $('iwl-server').value; this.key = '';
+      this.mode = e.target.value; this._writeInvite(); this._entry();
+    };
     const transport = () => this.mode === 'wss' ? WssClient : this.mode === 'local' ? LanClient : PublicClient;
     $('iwl-create').onclick = () => this._connect(() => transport().create(name(), this._weapon(), $('iwl-server').value));
     $('iwl-join').onclick = () => {
       const c = $('iwl-code').value.trim().toUpperCase();
       if (!c) return this._entry('请输入房间码');
-      this._connect(() => transport().join(c, name(), this._weapon(), $('iwl-server').value, $('iwl-key').value));
+      this.server = $('iwl-server').value; this.key = $('iwl-key').value;
+      this._connect(() => transport().join(c, name(), this._weapon(), this.server, this.key));
     };
     $('iwl-code').onkeydown = (e) => { if (e.key === 'Enter') $('iwl-join').click(); };
+  }
+
+  _writeInvite(room = '', key = '') {
+    const url = inviteUrl(location.href, this.mode, room, this.server, key);
+    history.replaceState(null, '', url.pathname + url.search);
+    if (parent !== window) parent.postMessage({ type: 'inkwave-invite', search: url.search }, location.origin);
+  }
+  _shareUrl() {
+    const c = this.client;
+    const base = parent === window ? `${location.origin}${location.pathname}` : `${location.origin}/`;
+    return inviteUrl(base, this.mode, c.code, c.server || this.server, c.room.key || '').href;
   }
 
   _weaponSelect(cur) {
@@ -90,7 +121,8 @@ export class Lobby {
   }
 
   async _connect(fn) {
-    this.el.querySelectorAll('button').forEach((b) => (b.disabled = true));
+    this.el.querySelectorAll('button, input, select').forEach((b) => (b.disabled = true));
+    this.el.querySelector('#iwl-create').textContent = '正在连接…';
     try {
       this.client = await fn();
     } catch (e) { return this._entry(e.message); }
@@ -105,7 +137,8 @@ export class Lobby {
       if (d.t === 'start' && !this.client.isHost && from === this.client.room.host) this._launch(d);
       if (d.t === 'host-left') { this._toast('房主已离开，对局结束'); this._drop(); this.game.quitToMenu(); }
     });
-    history.replaceState(null, '', '#room=' + this.client.code);
+    this.server = this.client.server || this.server;
+    this._writeInvite(this.client.code, this.client.room.key || '');
     this._room();
   }
 
@@ -142,7 +175,7 @@ export class Lobby {
     };
     const opt = (obj, cur, zh) => Object.keys(obj).map((k) => `<option value="${k}" ${k === String(cur) ? 'selected' : ''}>${zh[k] || k}</option>`).join('');
     const mapOpts = MAPS.map((m) => `<option value="${m.id}" ${m.id === s.mapId ? 'selected' : ''}>${MAP_ZH[m.id] || m.name}</option>`).join('');
-    const addr = c.serverRelays ? `${location.origin}/?${new URLSearchParams({server:c.server,room:room.code,key:room.key})}` : `${location.protocol}//${location.host}/#room=${room.code}`;
+    const addr = this._shareUrl();
     this.el.innerHTML = `
       <div class="iwl-card iwl-wide">
         <div class="iwl-head">
@@ -181,16 +214,24 @@ export class Lobby {
   }
 
   async _hostStart() {
+    if (this.launching) return;
+    this.launching = true;
     const c = this.client;
     const pkt = this.session.buildStart(c.room.settings);
-    try { await c.request('start', c.serverRelays ? {packet:pkt} : {}); } catch (e) { return this._toast(e.message); }
+    try { await c.request('start', c.serverRelays ? {packet:pkt} : {}); } catch (e) { this.launching = false; return this._toast(e.message); }
     if (!c.serverRelays) this.session.send(pkt);
     this._launch(pkt);
   }
 
-  _launch(d) {
+  async _launch(d) {
     this.hide();
-    this.game.startMatch({ mapId: d.mapId, duration: d.duration, difficulty: d.difficulty, palette: d.palette, roster: d.roster, net: this.session });
+    this.session.prepare();
+    try {
+      await this.game.startMatch({ mapId: d.mapId, duration: d.duration, difficulty: d.difficulty, palette: d.palette, roster: d.roster, net: this.session });
+    } catch (error) {
+      this._drop(); await this.game.quitToMenu();
+      await this.open(); this._entry(`对局加载失败：${error.message}`);
+    } finally { this.launching = false; }
   }
 
   // 一局结束后回到房间
@@ -203,7 +244,7 @@ export class Lobby {
   _drop() {
     this.session?.close();
     this.session = null; this.client = null; G.net = null;
-    history.replaceState(null, '', location.pathname + location.search);
+    this.key = ''; this._writeInvite();
   }
   leave() { if (this.client) this._drop(); }
 
