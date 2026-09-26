@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "two real peers in 10-role playing match after expired guest user activation",
+    "guest real left click locks mouse, fires projectiles, consumes ink and reaches other peer; release stops firing",
+    "guest real left click locks mouse, fires projectiles, consumes ink and reaches other peer; release stops firing",
+    "host real left click locks mouse, fires projectiles, consumes ink and reaches other peer; release stops firing"
+  ],
+  "transport": "real PeerJS Cloud / WebRTC",
+  "input": "trusted Playwright mouse events; no injected fire intent",
+  "scene": "original scene, software GPU, simulation stepped",
+  "room": "A17DF8",
+  "success": true
+}

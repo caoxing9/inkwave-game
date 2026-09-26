@@ -27,7 +27,7 @@ export class Input {
       if (e.code === 'Tab') e.preventDefault();
     });
     window.addEventListener('keyup', (e) => { this.keys.delete(e.code); });
-    window.addEventListener('blur', () => { this.keys.clear(); this.mouse.left = this.mouse.right = false; });
+    window.addEventListener('blur', () => { this.keys.clear(); this.pressed.clear(); this.clearButtons(); });
     window.addEventListener('mousemove', (e) => {
       if (!this.locked) return;
       this.mouse.dx += e.movementX; this.mouse.dy += e.movementY;
@@ -44,18 +44,29 @@ export class Input {
     });
     window.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('pointerlockchange', () => {
+      const wasLocked = this.locked;
       this.locked = document.pointerLockElement === this.canvas;
-      if (!this.locked) { this.mouse.left = this.mouse.right = false; this.onUnlock?.(); }
+      if (!this.locked) { this.clearButtons(); if (wasLocked) this.onUnlock?.(); }
+      this.onLockChange?.(this.locked);
     });
   }
 
-  requestLock() {
-    if (this.locked) return;
-    try {
-      const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
-      // some platforms reject unadjustedMovement: fall back to a plain request
-      if (p && p.catch) p.catch(() => { try { const q = this.canvas.requestPointerLock(); if (q && q.catch) q.catch(() => {}); } catch { /* ignore */ } });
-    } catch { /* not allowed without a gesture */ }
+  async requestLock() {
+    if (document.pointerLockElement === this.canvas) return true;
+    if (this.lockRequest) return this.lockRequest;
+    this.lockRequest = (async () => {
+      try {
+        try { await this.canvas.requestPointerLock({ unadjustedMovement: true }); }
+        catch { await this.canvas.requestPointerLock(); }
+        return document.pointerLockElement === this.canvas;
+      } catch { return false; }
+    })();
+    try { return await this.lockRequest; }
+    finally { this.lockRequest = null; }
+  }
+  clearButtons() {
+    this.mouse.left = this.mouse.right = this.mouse.leftPressed = this.mouse.rightPressed = false;
+    this.mouse.dx = this.mouse.dy = 0;
   }
   exitLock() { if (document.pointerLockElement) document.exitPointerLock(); }
 

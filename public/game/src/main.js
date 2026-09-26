@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { G, on, emit, clamp, damp } from './core/ctx.js';
 import { Renderer } from './core/renderer.js';
 import { Input } from './core/input.js';
+import { ControlGate } from './core/control-gate.js';
 import {
   DEFAULT_SETTINGS, QUALITY, TEAM_PALETTES, COLORBLIND_PALETTE, TEAM_NAMES, WEAPONS, WEAPON_ORDER, SUB, SPECIALS,
   MAPS, DIFFICULTY, PLAYER, PROGRESSION, VERSION, MATCH,
@@ -77,6 +78,8 @@ class Game {
     this.input = G.input = new Input(this.R.renderer.domElement);
     this.input.onKey = (e, repeat) => this._onKey(e, repeat);
     this.input.onUnlock = () => this._onPointerUnlock();
+    this.controlGate = new ControlGate(this);
+    this.input.onLockChange = () => this.controlGate.update();
 
     // modules built by other authors
     const [charMod, fxMod, envMod, audioMod, musicMod] = await Promise.all([
@@ -483,7 +486,9 @@ class Game {
     G.net = opts.net;
     this.lastMatchOpts = opts;
     G.audio?.init?.();
-    this.input.requestLock();
+    // Remote guests have no user activation when a network packet starts the
+    // match. Their own click on ControlGate acquires pointer lock instead.
+    if (!opts.net || navigator.userActivation?.isActive) this.input.requestLock();
     this.menus?.show(null);
     await this._fade(1, 350);
     G.music?.stop?.(0.3); this._musicTrack = null;
@@ -512,6 +517,7 @@ class Game {
     this.hud?.setVisible(false);
     this.hudPrompt = null; this._hintT = 0; this._hints = {};
     m.start();
+    this.controlGate.update();
     this._fade(0, 500);
   }
 
@@ -734,6 +740,7 @@ class Game {
     ps.calls = G.renderer.info.render.calls; ps.tris = G.renderer.info.render.triangles;
     // HUD
     if (m && !m.attract && this.hud && (m.state === 'playing' || m.state === 'intro' || m.state === 'finish')) this._updateHud(dt);
+    this.controlGate?.update();
     this.menus?.update?.(dt);
     this.input.endFrame();
   }
