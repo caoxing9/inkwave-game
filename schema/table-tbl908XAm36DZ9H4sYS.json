@@ -1,0 +1,180 @@
+{
+  "id": "tbl908XAm36DZ9H4sYS",
+  "name": "游戏素材库",
+  "description": null,
+  "dbTableName": "\"bse76v2JpRwtMeKsQbi\".\"tbl908XAm36DZ9H4sYS\"",
+  "fields": [
+    {
+      "id": "fldr1qQDJBSAPfAVuS0",
+      "name": "素材名称",
+      "dbFieldName": "Su_Cai_Ming_Cheng",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldYiYi66WDZKGxGOVH",
+      "name": "资源路径",
+      "dbFieldName": "Zi_Yuan_Lu_Jing",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldqBdYuRW1nrqSdfXz",
+      "name": "素材文件",
+      "dbFieldName": "Su_Cai_Wen_Jian",
+      "type": "attachment",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": true
+    },
+    {
+      "id": "fldE78ZLXN5a4mQ9p21",
+      "name": "文件类型",
+      "dbFieldName": "Wen_Jian_Lei_Xing",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldth0gvj7BXU2PnoOZ",
+      "name": "字节数",
+      "dbFieldName": "Zi_Jie_Shu",
+      "type": "number",
+      "description": null,
+      "options": {
+        "formatting": {
+          "type": "decimal",
+          "precision": 2
+        }
+      },
+      "cellValueType": "number",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldc3vpq8dX68PIQmct",
+      "name": "SHA256",
+      "dbFieldName": "SHA256",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldjTSGFuiiN1mAse1A",
+      "name": "启用",
+      "dbFieldName": "Qi_Yong",
+      "type": "checkbox",
+      "description": null,
+      "options": {},
+      "cellValueType": "boolean",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldwH0UkNd8iDejDo9W",
+      "name": "来源与说明",
+      "dbFieldName": "Lai_Yuan_Yu_Shuo_Ming",
+      "type": "longText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldMgYsJuSumc4XFww4",
+      "name": "验证时间",
+      "dbFieldName": "Yan_Zheng_Shi_Jian",
+      "type": "date",
+      "description": null,
+      "options": {
+        "formatting": {
+          "date": "YYYY-MM-DD",
+          "time": "None",
+          "timeZone": "utc"
+        }
+      },
+      "cellValueType": "dateTime",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldcjJ5y2QbBS9qBIa3",
+      "name": "所属游戏",
+      "dbFieldName": "Suo_Shu_You_Xi",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "运输船",
+        "QQ飞车",
+        "鹈鹕游戏"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldZ53mFPvwZUMIBf7S",
+      "name": "素材类型",
+      "dbFieldName": "Su_Cai_Lei_Xing",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "第一人称武器",
+        "第三人称武器",
+        "手臂",
+        "角色",
+        "地图",
+        "音效",
+        "封面",
+        "程序生成"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    },
+    {
+      "id": "fldBAiSynUqMykHkz9F",
+      "name": "验证状态",
+      "dbFieldName": "Yan_Zheng_Zhuang_Tai",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "待验证",
+        "已验证",
+        "失败"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": false
+    }
+  ]
+}

@@ -244,6 +244,7 @@ Available tables (id → name → schema file):
 
 - `tblylwFtd6BskMzv4RE` → 联机信令 → `schema/table-tblylwFtd6BskMzv4RE.json` (SQL: `"bse76v2JpRwtMeKsQbi"."tblylwFtd6BskMzv4RE"`)
 - `tbl6fvBaDYLyW2lECRk` → 游戏玩家 → `schema/table-tbl6fvBaDYLyW2lECRk.json` (SQL: `"bse76v2JpRwtMeKsQbi"."tbl6fvBaDYLyW2lECRk"`)
+- `tbl908XAm36DZ9H4sYS` → 游戏素材库 → `schema/table-tbl908XAm36DZ9H4sYS.json` (SQL: `"bse76v2JpRwtMeKsQbi"."tbl908XAm36DZ9H4sYS"`)
 - `tbllFvV6h7vYzKEYiSL` → 房间成员 → `schema/table-tbllFvV6h7vYzKEYiSL.json` (SQL: `"bse76v2JpRwtMeKsQbi"."tbllFvV6h7vYzKEYiSL"`)
 - `tblztTPyuPXVV565blw` → 联机房间 → `schema/table-tblztTPyuPXVV565blw.json` (SQL: `"bse76v2JpRwtMeKsQbi"."tblztTPyuPXVV565blw"`)
 
