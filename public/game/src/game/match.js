@@ -82,7 +82,7 @@ export class Match {
     // initial placement on the spawn decks (standing, no drop)
     for (const a of this.actors) {
       const pad = G.level.spawnPads[a.team];
-      const ang = (a.slot / 4) * Math.PI * 2 + 0.6;
+      const ang = (a.slot / MATCH.teamSize) * Math.PI * 2 + 0.6;
       _v.set(pad.x + Math.cos(ang) * 1.2, pad.y, pad.z + Math.sin(ang) * 1.2);
       a.spawnAt(_v, a.team === 0 ? 0 : Math.PI);
       a.invuln = 0;

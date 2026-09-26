@@ -105,7 +105,8 @@ export class PlayerController {
       if (inp.wasPressed('Digit1') || inp.padPressed.has(14)) pick(0);
       if (inp.wasPressed('Digit2') || inp.padPressed.has(12)) pick(1);
       if (inp.wasPressed('Digit3') || inp.padPressed.has(15)) pick(2);
-      if (inp.wasPressed('Digit4') || inp.padPressed.has(13)) { const p = G.level.spawnPads[a.team]; a.superJump(p.clone()); }
+      if (inp.wasPressed('Digit4')) pick(3);
+      if (inp.wasPressed('Digit5') || inp.padPressed.has(13)) { const p = G.level.spawnPads[a.team]; a.superJump(p.clone()); }
     }
 
     // ---- aim point from the camera centre ray

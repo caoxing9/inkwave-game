@@ -6,9 +6,9 @@
 
 const ZH = {
   // ---- 主菜单 / 通用
-  'PLAY': '开始游戏', 'Turf War · 4 v 4': '涂地对战 · 4 对 4', 'MULTIPLAYER': '联机对战', 'Online · up to 8 players': '在线联机 · 最多 8 人',
+  'PLAY': '开始游戏', 'Turf War · 5 v 5': '涂地对战 · 5 对 5', 'MULTIPLAYER': '联机对战', 'Online · up to 10 players': '在线联机 · 最多 10 人',
   'LOADOUT': '装备', 'SETTINGS': '设置', 'HOW TO PLAY': '玩法说明', 'CREDITS': '制作名单',
-  'Jump into a 4 v 4 Turf War against bots': '与机器人进行 4 对 4 涂地对战',
+  'Jump into a 5 v 5 Turf War against bots': '与机器人进行 5 对 5 涂地对战',
   'Play with friends on the same network (needs node server.mjs)': '和同一网络的朋友一起玩（需运行 node server.mjs）',
   'Pick your weapon and name your squidkid': '选择武器、给角色起名',
   'Controls, video, audio and gameplay options': '操作、画面、声音和玩法选项',
@@ -87,7 +87,7 @@ const ZH = {
   'Your special gauge fills as you ink. Press [F] when it glows!': '涂地会积攒大招，发光时按 [F] 释放！',
   'Only turf counts when time runs out. Splats just buy you space.': '最终只算涂地面积，击倒对手只是帮你争取空间。',
   'Ink the turf': '涂地', 'Swim to refill': '潜墨补充', 'Avoid enemy ink': '避开敌方墨水', 'Climb inked walls': '爬涂过的墙',
-  'Ink the most turf in 4 v 4 against bots': '在 4 对 4 中涂出最多地盘',
+  'Ink the most turf in 5 v 5 against bots': '在 5 对 5 中涂出最多地盘',
   // ---- 对局 HUD
   'READY?': '准备好了吗？', 'READY!': '准备！', 'Ready!': '准备！', 'GO!': '开始！', 'GO': '开始',
   "TIME'S UP!": '时间到！', '1 minute left!': '还剩 1 分钟！', 'LOW INK': '墨量不足', 'TURF': '涂地', 'SPLATS': '击倒', 'SPLATTED': '被击倒',
@@ -96,7 +96,7 @@ const ZH = {
   'Low ink! Hold SHIFT in your ink to refill': '墨量不足！在自己的墨里按住 SHIFT 补充',
   'Special ready! Press F': '大招就绪！按 F 释放',
   'Paint the ground — most turf wins!': '涂地吧——涂得最多的一方获胜！',
-  'Press 1 – 3 to Super Jump to a teammate  ·  4 to jump home': '按 1–3 超级跳到队友身边  ·  按 4 跳回基地',
+  'Press 1 – 4 to Super Jump to a teammate  ·  5 to jump home': '按 1–4 超级跳到队友身边  ·  按 5 跳回基地',
   'Hold [TAB] to plan a Super Jump': '按住 [TAB] 规划超级跳', 'Pick a landing spot': '选择落点',
   'Aim bomb · release to throw': '瞄准炸弹 · 松开投掷', 'The whole team is splatted': '全队都被击倒了',
   'FIRST SPLAT!': '首杀！', 'DOUBLE SPLAT!': '双杀！', 'TRIPLE SPLAT!': '三杀！', 'QUAD SPLAT!': '四杀！', 'WIPEOUT!': '团灭！',

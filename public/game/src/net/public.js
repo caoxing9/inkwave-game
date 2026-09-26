@@ -66,8 +66,8 @@ export class PublicClient {
     conn.on('open', () => {
       if (this.closed) { conn.close(); return; }
       if (incoming) {
-        if (this.room.started || this.members.length >= 8) {
-          conn.send({ _iw: 'reject', message: this.room.started ? '对战已开始，请等下一局。' : '房间已满（8 人）。' });
+        if (this.room.started || this.members.length >= 10) {
+          conn.send({ _iw: 'reject', message: this.room.started ? '对战已开始，请等下一局。' : '房间已满（10 人）。' });
           setTimeout(() => conn.close(), 500); return;
         }
         const a = this.members.filter(m => m.team === 0).length;
@@ -184,7 +184,7 @@ export class PublicClient {
     if (action === 'profile') {
       if (this.room.started) throw new Error('请在本局结束后更换配置');
       if ([0, 1].includes(extra.team)) {
-        if (this.members.filter(m => m.id !== id && m.team === extra.team).length >= 4) throw new Error('该队伍已满（4 人）');
+        if (this.members.filter(m => m.id !== id && m.team === extra.team).length >= 5) throw new Error('该队伍已满（5 人）');
         me.team = extra.team;
       }
       if (weapons.has(extra.weapon)) me.weapon = extra.weapon;

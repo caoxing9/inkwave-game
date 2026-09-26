@@ -835,7 +835,7 @@ class Game {
     let prompt = null;
     const inkF = a.ink / PLAYER.inkMax;
     if (m.state === 'playing' && a.alive) {
-      if (m.controller?.mapHeld) prompt = 'Press 1 – 3 to Super Jump to a teammate  ·  4 to jump home';
+      if (m.controller?.mapHeld) prompt = 'Press 1 – 4 to Super Jump to a teammate  ·  5 to jump home';
       else if (a.superJumpState) prompt = null;
       else if (this._lowInkFlash > 0) { this._lowInkFlash -= dt; prompt = 'Low ink! Hold SHIFT in your ink to refill'; }
       else if (a.specialReady() && (this._hints.specialT = (this._hints.specialT || 0) + dt) > 2) prompt = `Special ready! Press F`;

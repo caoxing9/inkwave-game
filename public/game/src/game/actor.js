@@ -13,7 +13,7 @@
 //  · jump buffer + coyote time, apex hang, hard-landing recovery, fire buffer across form changes
 import * as THREE from 'three';
 import { G, emit, clamp, damp, angleDiff, smoothstep } from '../core/ctx.js';
-import { PLAYER, WEAPONS, SPECIALS } from '../config.js';
+import { PLAYER, WEAPONS, SPECIALS, MATCH } from '../config.js';
 import { makeContacts, Hit, GroundHit, WALKABLE } from './physics.js';
 import { WeaponRunner } from './weapons.js';
 
@@ -143,7 +143,7 @@ export class Actor {
   // Drop in from above the spawn pad (respawn), landing with a splash.
   respawn() {
     const pad = G.level.spawnPads[this.team];
-    const a = (this.slot / 4) * Math.PI * 2 + 0.6;
+    const a = (this.slot / MATCH.teamSize) * Math.PI * 2 + 0.6;
     const p = _v.set(pad.x + Math.cos(a) * 1.1, pad.y + 4.5, pad.z + Math.sin(a) * 1.1);
     const yaw = this.team === 0 ? 0 : Math.PI;
     this.spawnAt(p, yaw);

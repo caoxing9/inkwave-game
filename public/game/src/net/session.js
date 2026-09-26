@@ -38,10 +38,10 @@ export class NetSession {
   on(fn) { this.handlers.add(fn); return () => this.handlers.delete(fn); }
 
   // ------------------------------------------------------------------ lobby → match
-  // 房主：根据房间成员生成 8 人名单（真人按所选队伍，空位由机器人补齐），发送开局包
+  // 房主：根据房间成员生成 10 人名单（真人按所选队伍，空位由机器人补齐），发送开局包
   buildStart(settings) {
     const members = this.client.members;
-    const teams = [members.filter((m) => m.team === 0).slice(0, 4), members.filter((m) => m.team === 1).slice(0, 4)];
+    const teams = [members.filter((m) => m.team === 0).slice(0, MATCH.teamSize), members.filter((m) => m.team === 1).slice(0, MATCH.teamSize)];
     const names = [...BOT_NAMES].sort(() => Math.random() - 0.5);
     const roster = [];
     let ni = 0;
@@ -74,8 +74,8 @@ export class NetSession {
   }
   detach() { this.match = null; this.byId.clear(); }
 
-  markLoaded() { if (this.isHost) this.loaded.add(this.me); else this.send({ t: 'ld' }); }
-  everyoneLoaded() { return this.client.members.every((m) => this.loaded.has(m.id)); }
+  markLoaded() { if (this.isHost) this.loaded.add(this.me); if (!this.isHost || this.client.serverRelays) this.send({ t: 'ld' }); }
+  everyoneLoaded() { return this.client.members.every((m) => this.client.serverRelays ? m.loaded : this.loaded.has(m.id)); }
 
   // ------------------------------------------------------------------ transport
   send(d, to) { this.client.send(d, to); }
@@ -83,7 +83,7 @@ export class NetSession {
   _recv(d, from) {
     if (!d || typeof d.t !== 'string') return;
     // 房主转发
-    if (this.isHost && from !== this.me) {
+    if (this.isHost && !this.client.serverRelays && from !== this.me) {
       if (BROADCAST.has(d.t)) for (const m of this.client.targets) if (m.id !== from) this.client.send(d, m.id);
       if (d.t === 'hit') {
         const v = this.byId.get(d.v);

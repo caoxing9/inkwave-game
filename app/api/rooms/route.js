@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-const MAX_MEMBERS = 8;
+const MAX_MEMBERS = 10;
 
 // ---------------------------------------------------------------------------------------------- rooms
 /** code → { code, host, members[], signals[], seq, started, updated, settings, relay:Set, packets[], packetSeq, lastPacket{} } */
@@ -83,7 +83,7 @@ function handleRooms(body) {
       if (b.name) me.name = cleanName(b.name) || me.name;
       if (WEAPONS.has(b.weapon)) me.weapon = b.weapon;
       if (b.team === 0 || b.team === 1) {
-        if (room.members.filter((m) => m.team === b.team && m !== me).length >= 4) return [409, { error: '该队伍已满（4 人）' }];
+        if (room.members.filter((m) => m.team === b.team && m !== me).length >= 5) return [409, { error: '该队伍已满（5 人）' }];
         me.team = b.team;
       }
       break;

@@ -48,7 +48,7 @@ const DIFF_INFO = {
 const STAT_LABELS = [['range', 'Range'], ['damage', 'Damage'], ['rate', 'Fire rate'], ['mobility', 'Mobility'], ['paint', 'Ink coverage']];
 const KIND_LABEL = { shooter: 'Shooter', roller: 'Roller', charger: 'Charger', blaster: 'Blaster' };
 const MENU_DESC = {
-  play: 'Jump into a 4 v 4 Turf War against bots',
+  play: 'Jump into a 5 v 5 Turf War against bots',
   online: 'Play with friends on the same network (needs node server.mjs)',
   loadout: 'Pick your weapon and name your squidkid',
   settings: 'Controls, video, audio and gameplay options',
@@ -698,8 +698,8 @@ export class Menus {
     const sp = this._specials()[W.special] || Object.values(this._specials())[0];
     const sub = this._sub();
     const items = [
-      { id: 'play', label: 'PLAY', sub: 'Turf War · 4 v 4', icon: GLYPHS.play, cls: 'iw-btn--menu iw-btn--xl iw-btn--primary', accept: () => this._go('setup'), sound: 'ui_confirm' },
-      { id: 'online', label: 'MULTIPLAYER', sub: 'Online · up to 8 players', icon: GLYPHS.play, cls: 'iw-btn--menu', accept: () => this.api.openLobby && this.api.openLobby(), sound: 'ui_confirm' },
+      { id: 'play', label: 'PLAY', sub: 'Turf War · 5 v 5', icon: GLYPHS.play, cls: 'iw-btn--menu iw-btn--xl iw-btn--primary', accept: () => this._go('setup'), sound: 'ui_confirm' },
+      { id: 'online', label: 'MULTIPLAYER', sub: 'Online · up to 10 players', icon: GLYPHS.play, cls: 'iw-btn--menu', accept: () => this.api.openLobby && this.api.openLobby(), sound: 'ui_confirm' },
       { id: 'loadout', label: 'LOADOUT', icon: weaponIcon(W.kind || lo.weapon), cls: 'iw-btn--menu', accept: () => this._go('loadout') },
       { id: 'settings', label: 'SETTINGS', icon: GLYPHS.gear, cls: 'iw-btn--menu', accept: () => this._go('settings') },
       { id: 'howto', label: 'HOW TO PLAY', icon: GLYPHS.question, cls: 'iw-btn--menu', accept: () => this._go('howto') },
@@ -828,7 +828,7 @@ export class Menus {
 
     const el = h('div', { class: 'iw-screen iw-setup' },
       h('div', { class: 'iw-scrim-left' }),
-      this._header('TURF WAR', { sub: 'Ink the most turf in 4 v 4 against bots' }),
+      this._header('TURF WAR', { sub: 'Ink the most turf in 5 v 5 against bots' }),
       h('div', { class: 'iw-setup__body' },
         h('div', { class: 'iw-seclabel iw-in' }, h('i', { html: GLYPHS.map }), 'STAGE'),
         h('div', { class: 'iw-setup__maps' }, cards),
@@ -1335,7 +1335,7 @@ export class Menus {
     const cast = h('div', { class: 'iw-cred__cast' }, BOT_NAMES.map((n, i) => h('span', { style: { '--c': i % 2 ? 'var(--b)' : 'var(--a)' } }, h('i', { html: SQUID }), n)));
     const roll = h('div', { class: 'iw-cred__roll' },
       h('div', { class: 'iw-cred__logo', html: logoMarkup(GAME_TITLE, GAME_SUBTITLE, 'md') }),
-      h('p', { class: 'iw-cred__lead' }, 'An original 4 v 4 turf-war shooter.'),
+      h('p', { class: 'iw-cred__lead' }, 'An original 5 v 5 turf-war shooter.'),
       sec('Made with', 'Procedural everything — squidkids, weapons, stage, ink, music and sound are all generated in code.'),
       sec('Rendering', 'three.js', h('p', { class: 'dim' }, 'by the three.js authors & contributors')),
       sec('Typography', 'Titan One — Font Diner', 'Rubik — Hubert & Fischer', h('p', { class: 'dim' }, 'SIL Open Font License')),

@@ -3,6 +3,7 @@ import { G } from '../core/ctx.js';
 import { WEAPONS, WEAPON_ORDER, MAPS, DIFFICULTY } from '../config.js';
 import { LanClient, serverAvailable } from './lan.js';
 import { PublicClient } from './public.js';
+import { WssClient } from './wss.js';
 import { NetSession } from './session.js';
 
 const WEAPON_ZH = { shooter: '喷溅枪', roller: '滚筒刷', charger: '蓄力狙', blaster: '爆破枪' };
@@ -15,7 +16,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 export class Lobby {
   constructor(game) {
     this.game = game;
-    this.client = null; this.session = null; this.mode = 'public';
+    this.client = null; this.session = null; this.mode = 'wss';
     this.el = document.createElement('div');
     this.el.className = 'iwl hidden';
     document.body.appendChild(this.el);
@@ -27,7 +28,7 @@ export class Lobby {
       const pings = status.map(s => s.ping).filter(Number.isFinite);
       const queued = c?.channels ? [...c.channels.values()].reduce((n, ch) => n + (ch.dataChannel?.bufferedAmount || 0), 0) + [...(c.stateChannels?.values() || [])].reduce((n, ch) => n + ch.bufferedAmount, 0) : 0;
       const fast = !!c?.targets.length && c.targets.every(m => c.stateChannels?.get(m.id)?.readyState === 'open' || c.stCh?.get(m.id)?.readyState === 'open');
-      if (parent !== window) parent.postMessage({ type: 'inkwave-metrics', active: this.inRoom && G.mode === 'match', fps: Math.round(game.fps || 0), ping: pings.length ? Math.max(...pings) : null, queued: Math.round(queued / 1024), fast, host: !!c?.isHost }, location.origin);
+      if (parent !== window) parent.postMessage({ type: 'inkwave-metrics', active: this.inRoom && G.mode === 'match', fps: Math.round(game.fps || 0), ping: c?.serverRelays ? c.rtt ?? null : pings.length ? Math.max(...pings) : null, queued: Math.round((c?.serverRelays ? (c.ws?.bufferedAmount || 0) + c.eventBytes : queued) / 1024), fast, server: !!c?.serverRelays, host: !!c?.isHost }, location.origin);
     }, 1000);
   }
 
@@ -48,13 +49,15 @@ export class Lobby {
   // ---------------------------------------------------------------- 入口
   _entry(error = '') {
     const p = this._profile();
-    const code = (location.hash.match(/room=(\w+)/) || [])[1] || '';
+    const code = new URLSearchParams(location.search).get('room') || (location.hash.match(/room=(\w+)/) || [])[1] || '';
     this.el.innerHTML = `
       <div class="iwl-card">
         <h2>联机对战 <small>INKWAVE</small></h2>
-        <p class="iwl-muted">一人创建房间，把房间码告诉朋友。最多 8 人，空位由机器人补齐。</p>
-        <label class="iwl-field"><span>连接方式</span><select id="iwl-mode"><option value="public" ${this.mode === 'public' ? 'selected' : ''}>免费信令直连（在线联机）</option>${this.serverOk ? `<option value="local" ${this.mode === 'local' ? 'selected' : ''}>局域网服务器（支持中转）</option>` : ''}</select></label>
-        <p class="iwl-muted">在线模式使用 WebRTC 直连，需要双方网络允许点对点连接。同一网络体验更佳。需要服务器中转时，可<a href="/downloads/inkwave-local.zip" download>下载局域网版</a>，解压后按包内《联机说明》启动。</p>
+        <p class="iwl-muted">一人创建房间，把房间码告诉朋友。最多 10 人，空位由机器人补齐。</p>
+        <label class="iwl-field"><span>连接方式</span><select id="iwl-mode"><option value="wss" ${this.mode === 'wss' ? 'selected' : ''}>WSS 专用服务器（10人）</option><option value="public" ${this.mode === 'public' ? 'selected' : ''}>免费信令直连（在线联机）</option>${this.serverOk ? `<option value="local" ${this.mode === 'local' ? 'selected' : ''}>局域网服务器（支持中转）</option>` : ''}</select></label>
+        <label class="iwl-field"><span>服务器</span><input id="iwl-server" value="${esc(new URLSearchParams(location.search).get('server') || 'socket-server.app.teable.cn:8443')}"></label>
+        <label class="iwl-field"><span>房间口令</span><input id="iwl-key" maxlength="4" placeholder="加入 WSS 房间时填写" value="${esc(new URLSearchParams(location.search).get('key') || '')}"></label>
+        <p class="iwl-muted">WSS 模式需要服务器已部署墨浪兼容版本。WebRTC 备用模式需要双方网络允许直连。也可<a href="/downloads/inkwave-local.zip" download>下载局域网版</a>自托管。</p>
         <label class="iwl-field"><span>昵称</span><input id="iwl-name" maxlength="16" value="${esc(p.name || '玩家')}"></label>
         <label class="iwl-field"><span>武器</span>${this._weaponSelect(this._weapon())}</label>
         <div class="iwl-row">
@@ -72,12 +75,12 @@ export class Lobby {
     $('iwl-weapon').onchange = (e) => this.game.api.setLoadout({ weapon: e.target.value });
     $('iwl-back').onclick = () => { this.hide(); this.game.menus?.show('main'); };
     $('iwl-mode').onchange = e => { this.mode = e.target.value; };
-    const transport = () => this.mode === 'local' ? LanClient : PublicClient;
-    $('iwl-create').onclick = () => this._connect(() => transport().create(name(), this._weapon()));
+    const transport = () => this.mode === 'wss' ? WssClient : this.mode === 'local' ? LanClient : PublicClient;
+    $('iwl-create').onclick = () => this._connect(() => transport().create(name(), this._weapon(), $('iwl-server').value));
     $('iwl-join').onclick = () => {
       const c = $('iwl-code').value.trim().toUpperCase();
       if (!c) return this._entry('请输入房间码');
-      this._connect(() => transport().join(c, name(), this._weapon()));
+      this._connect(() => transport().join(c, name(), this._weapon(), $('iwl-server').value, $('iwl-key').value));
     };
     $('iwl-code').onkeydown = (e) => { if (e.key === 'Enter') $('iwl-join').click(); };
   }
@@ -134,16 +137,16 @@ export class Lobby {
         else if (x) conn = `<em class="iwl-conn iwl-conn--${x.via}" title="${esc(x.stage)}">${x.via === 'direct' ? '直连' : x.via === 'relay' ? '中转' : '连接中…'}${x.ping != null ? ` · ${x.ping}ms` : ''}</em>`;
         return `<li><b>${esc(m.name)}</b>${m.id === room.host ? '<i class="iwl-host">房主</i>' : ''}<span>${WEAPON_ZH[m.weapon] || ''}</span>${conn}</li>`;
       }).join('');
-      const bots = Math.max(0, 4 - list.length);
+      const bots = Math.max(0, 5 - list.length);
       return `<div class="iwl-team iwl-team--${t}"><h3>${TEAM_ZH[t]} <small>${list.length} 人${bots ? ` + ${bots} 机器人` : ''}</small></h3><ul>${rows || '<li class="iwl-muted">（全部由机器人补位）</li>'}</ul></div>`;
     };
     const opt = (obj, cur, zh) => Object.keys(obj).map((k) => `<option value="${k}" ${k === String(cur) ? 'selected' : ''}>${zh[k] || k}</option>`).join('');
     const mapOpts = MAPS.map((m) => `<option value="${m.id}" ${m.id === s.mapId ? 'selected' : ''}>${MAP_ZH[m.id] || m.name}</option>`).join('');
-    const addr = `${location.protocol}//${location.host}/#room=${room.code}`;
+    const addr = c.serverRelays ? `${location.origin}/?${new URLSearchParams({server:c.server,room:room.code,key:room.key})}` : `${location.protocol}//${location.host}/#room=${room.code}`;
     this.el.innerHTML = `
       <div class="iwl-card iwl-wide">
         <div class="iwl-head">
-          <h2>房间 <span class="iwl-roomcode">${room.code}</span></h2>
+          <h2>房间 <span class="iwl-roomcode">${room.code}</span>${c.serverRelays ? `<small>口令 ${esc(room.key)}</small>` : ''}</h2>
           <div class="iwl-muted">把房间码或链接发给朋友：<code>${esc(addr)}</code> <button class="iwl-btn iwl-small" id="iwl-copy">复制</button></div>
         </div>
         <div class="iwl-teams">${col(0)}${col(1)}</div>
@@ -179,9 +182,9 @@ export class Lobby {
 
   async _hostStart() {
     const c = this.client;
-    try { await c.request('start'); } catch (e) { return this._toast(e.message); }
     const pkt = this.session.buildStart(c.room.settings);
-    this.session.send(pkt);
+    try { await c.request('start', c.serverRelays ? {packet:pkt} : {}); } catch (e) { return this._toast(e.message); }
+    if (!c.serverRelays) this.session.send(pkt);
     this._launch(pkt);
   }
 
