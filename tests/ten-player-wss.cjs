@@ -1,0 +1,44 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+(async()=>{
+ global.location={origin:'https://test.example'};global.addEventListener=()=>{};global.removeEventListener=()=>{};
+ class Socket {
+  static OPEN=1;static instances=[];
+  constructor(){this.readyState=1;this.bufferedAmount=0;this.sent=[];Socket.instances.push(this);queueMicrotask(()=>this.onopen());}
+  send(s){this.sent.push(JSON.parse(s));}
+  message(m){this.onmessage({data:JSON.stringify(m)});}
+  close(){this.readyState=3;this.onclose?.();}
+ }
+ global.WebSocket=Socket;
+ const {WssClient}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync('public/game/src/net/wss.js','utf8')).toString('base64'));
+ const members=Array.from({length:10},(_,i)=>({id:'p'+i,name:'玩家'+i,team:i%2,weapon:'shooter',loaded:true}));
+ const room={game:'inkwave',code:'ABCDEF',key:'1234',host:'p0',members,cfg:{mapId:'tidewater',duration:90,difficulty:'normal'},match:null};
+ const clients=[];
+ for(let i=0;i<10;i++){
+  const opening=i===0?WssClient.create('玩家0','shooter'):WssClient.join('ABCDEF','玩家'+i,'shooter',undefined,'1234');
+  const ws=Socket.instances.at(-1);await Promise.resolve();assert.equal(ws.sent[0].cap,10);assert.equal(ws.sent[0].game,'inkwave');
+  ws.message({t:'welcome',me:'p'+i,room});clients.push(await opening);
+ }
+ const host=clients[0];const start={t:'start',roster:[]};const starting=host.request('start',{packet:start});const req=host.ws.sent.at(-1);assert.deepEqual(req.d.packet,start);
+ const running={...room,match:{id:'match1',started:true,host:'p0'}};
+ host.ws.message({t:'iwack',q:req.q,room:running});await starting;
+ for(const c of clients.slice(1))c.ws.message({t:'room',room:running});
+ const received=[];clients[1].onPacket=(d,from)=>received.push({d,from});
+ clients[1].ws.message({t:'iwst',m:'match1',rows:[{f:'p0',a:['a00',1]},{f:'p0',a:['a02',2]},{f:'p2',a:['a04',3]}]});assert.equal(received.length,2);assert.equal(received[0].d.a.length,2);
+ host.ws.bufferedAmount=20000;
+ for(let n=0;n<100;n++)host.send({t:'st',a:[['a00',n]]});
+ assert.equal(host.states.get('').size,1);host.ws.bufferedAmount=0;host.flush();assert.equal(host.ws.sent.at(-1).d.a[0][1],99);
+ const before=host.ws.sent.length;host.send({t:'sp',s:Array.from({length:600},()=>[1,2,3,1,0,0,0])});
+ const splats=host.ws.sent.slice(before);assert.equal(splats.length,3);assert.equal(splats.reduce((n,p)=>n+p.d.s.length,0),600);assert(splats.every(p=>p.d.s.length<=256&&Buffer.byteLength(JSON.stringify(p))<=49152));
+ let fatal=false;clients[2].onError=(_,f)=>fatal=f;clients[2].ws.close();assert(fatal&&clients[2].closed);
+ for(const c of clients)c.close();
+ const bad=WssClient.create('test','shooter');Socket.instances.at(-1).message({t:'welcome',me:'bad',room:{...room,game:'ship'}});await assert.rejects(bad,/尚未支持/);
+ const post=async body=>{const r=await fetch('http://127.0.0.1:3000/api/rooms',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};};
+ const h=await post({action:'create',name:'十人测试'});assert.equal(h.status,200);const code=h.data.room.code;
+ try {
+  for(let i=1;i<10;i++){const r=await post({action:'join',code,name:'玩家'+i});assert.equal(r.status,200);if(i===9){assert.equal(r.data.room.members.filter(m=>m.team===0).length,5);assert.equal(r.data.room.members.filter(m=>m.team===1).length,5);}}
+  assert.equal((await post({action:'join',code,name:'第十一人'})).status,409);
+  assert.equal((await post({action:'profile',code,id:h.data.id,token:h.data.token,team:1})).status,409);
+ } finally {await post({action:'leave',code,id:h.data.id,token:h.data.token});}
+ console.log('PASS mocked WSS protocol for 10 seats, atomic start, state grouping/coalescing, splat splitting, disconnect, old-server rejection; real local API 10 seats, 11th rejection and 5-player team cap');
+})().catch(e=>{console.error(e);process.exit(1)});

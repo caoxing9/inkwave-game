@@ -149,7 +149,7 @@ export const MATCH = {
   durations: [90, 180],     // seconds
   defaultDuration: 180,
   finalCountdown: 10,
-  teamSize: 4,
+  teamSize: 5,
   pointsPerM2: 1.0,          // turf points per square metre newly inked
 };
 
