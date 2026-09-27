@@ -18,9 +18,9 @@ export class PeerDiagnostics {
 }
 export function traceConnection(pc,log,label){
   if(!pc)return;
-  pc.addEventListener('icegatheringstatechange',()=>log.log('ice','收集连接路径',{channel:label,state:pc.iceGatheringState}));
-  pc.addEventListener('iceconnectionstatechange',()=>log.log('ice','检测直连路径',{channel:label,state:pc.iceConnectionState}));
-  pc.addEventListener('connectionstatechange',()=>log.log('webrtc','数据连接状态',{channel:label,state:pc.connectionState}));
-  pc.addEventListener('icecandidateerror',e=>log.log('ice','STUN 请求未成功',{channel:label,code:e.errorCode}));
-  pc.addEventListener('icecandidate',e=>{if(e.candidate)log.log('ice','发现路径',{channel:label,type:e.candidate.type,protocol:e.candidate.protocol});});
+  pc.addEventListener('icegatheringstatechange',()=>log.log('ice','Gathering connection paths',{channel:label,state:pc.iceGatheringState}));
+  pc.addEventListener('iceconnectionstatechange',()=>log.log('ice','Checking direct path',{channel:label,state:pc.iceConnectionState}));
+  pc.addEventListener('connectionstatechange',()=>log.log('webrtc','Data connection state',{channel:label,state:pc.connectionState}));
+  pc.addEventListener('icecandidateerror',e=>log.log('ice','STUN request failed',{channel:label,code:e.errorCode}));
+  pc.addEventListener('icecandidate',e=>{if(e.candidate)log.log('ice','Found path',{channel:label,type:e.candidate.type,protocol:e.candidate.protocol});});
 }

@@ -8,12 +8,12 @@ export class ControlGate {
     this.el = document.createElement('div');
     this.el.className = 'iwl hidden';
     this.el.setAttribute('role', 'dialog');
-    this.el.setAttribute('aria-label', '进入对战控制');
+    this.el.setAttribute('aria-label', 'Enter match controls');
     this.el.innerHTML = `<div class="iwl-card">
-      <h2>进入对战</h2>
-      <p class="iwl-muted">点击下方按钮启用鼠标瞄准，然后按住左键开枪。按 Esc 可打开菜单。</p>
+      <h2>Enter the Match</h2>
+      <p class="iwl-muted">Click the button below to enable mouse aiming, then hold left click to shoot. Press Esc to open the menu.</p>
       <p class="iwl-muted" id="iw-control-status" role="status"></p>
-      <div class="iwl-row iwl-end"><button type="button" class="iwl-btn iwl-primary" id="iw-control-enter">点击进入对战</button></div>
+      <div class="iwl-row iwl-end"><button type="button" class="iwl-btn iwl-primary" id="iw-control-enter">Click to Enter the Match</button></div>
     </div>`;
     document.body.appendChild(this.el);
     this.button = this.el.querySelector('#iw-control-enter');
@@ -21,12 +21,12 @@ export class ControlGate {
     this.button.addEventListener('click', async e => {
       e.stopPropagation();
       this.button.disabled = true;
-      this.status.textContent = '正在启用鼠标控制…';
+      this.status.textContent = 'Enabling mouse control…';
       game.input.clearButtons();
       G.audio?.init?.();
       const locked = await game.input.requestLock();
       this.button.disabled = false;
-      if (!locked) this.status.textContent = '浏览器尚未允许鼠标控制。请先点回游戏页面，再点一次；也可在独立页面中打开游戏。';
+      if (!locked) this.status.textContent = 'The browser has not allowed mouse control yet. Click back into the game page and try again, or open the game in its own tab.';
       this.update();
     });
   }

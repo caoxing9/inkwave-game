@@ -20,7 +20,7 @@ const assert = require('node:assert/strict');
   await frame.evaluate(()=>__inkwave.debug.freeze());
   await frame.locator('#iwl-create').waitFor();assert.equal(await frame.locator('#iwl-mode').inputValue(),'public');
   assert.equal(await frame.locator('#iwl-server').isVisible(),false);
-  await frame.locator('#iwl-name').fill('场景房主');await frame.locator('#iwl-create').click();
+  await frame.locator('#iwl-name').fill('SceneHost');await frame.locator('#iwl-create').click();
   await frame.locator('#iwl-start').waitFor({timeout:45000});
   const code=await frame.evaluate(()=>__inkwave.lobby.client.code);
   const invite=await frame.locator('.iwl-head code').innerText();assert.equal(new URL(invite).searchParams.get('mode'),'public');assert.equal(new URL(invite).searchParams.get('room'),code);
@@ -30,7 +30,7 @@ const assert = require('node:assert/strict');
   while(!(frame=pages[1].frames().find(f=>f.url().includes('/game/index.html'))))await pages[1].waitForTimeout(100);
   frames.push(frame);await frame.waitForFunction(()=>window.__inkwave?.debug,null,{timeout:240000});await frame.evaluate(()=>__inkwave.debug.freeze());
   await frame.locator('#iwl-join').waitFor();assert.equal(await frame.locator('#iwl-code').inputValue(),code);assert.equal(await frame.locator('#iwl-mode').inputValue(),'public');
-  await frame.locator('#iwl-name').fill('场景客人');await frame.locator('#iwl-join').click();
+  await frame.locator('#iwl-name').fill('SceneGuest');await frame.locator('#iwl-join').click();
   await frames[0].waitForFunction(()=>__inkwave.lobby.client.members.length===2&&__inkwave.lobby.client.allConnected(),null,{timeout:45000});
   report.checks.push('real share URL opens prefilled public lobby; two browsers joined');console.log('TWO_JOINED');
   // Deliberately delay host map attachment: guest ld must survive host attach.

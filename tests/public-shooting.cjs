@@ -13,7 +13,7 @@ const base=process.env.GAME_BASE_URL||'http://127.0.0.1:3000';
    await p.goto(`${base}/?mode=public&lobby=1`);
    await p.waitForSelector('iframe');let f;while(!(f=p.frames().find(f=>f.url().includes('/game/index.html'))))await p.waitForTimeout(50);
    frames.push(f);await f.waitForFunction(()=>window.__inkwave?.debug,null,{timeout:240000});await f.evaluate(()=>__inkwave.debug.freeze());
-   await f.locator('#iwl-create').waitFor();await f.locator('#iwl-name').fill(i?'射击客人':'射击房主');
+   await f.locator('#iwl-create').waitFor();await f.locator('#iwl-name').fill(i?'ShootGuest':'ShootHost');
    if(!i){await f.locator('#iwl-create').click();await f.locator('#iwl-start').waitFor({timeout:45000});report.room=await f.evaluate(()=>__inkwave.lobby.client.code);console.log('HOST',report.room);}
    else{await f.locator('#iwl-code').fill(report.room);await f.locator('#iwl-join').click();await f.waitForFunction(()=>__inkwave.lobby.inRoom);}
   }
@@ -37,7 +37,7 @@ const base=process.env.GAME_BASE_URL||'http://127.0.0.1:3000';
    await f.evaluate(()=>{__inkwave.controlGate?.update();});
    if(await f.locator('#iw-control-enter').isVisible())await f.locator('#iw-control-enter').click();
    else if(await f.evaluate(()=>!!__inkwave.menus.current&&!!__inkwave.match.netMenu)){
-    await f.getByText('继续',{exact:true}).first().click();
+    await f.getByText('RESUME',{exact:true}).first().click();
    }else await f.locator('#app canvas').click({position:{x:400,y:300}});
    await f.waitForFunction(()=>document.pointerLockElement===__inkwave.input.canvas,null,{timeout:5000});
    const before=await f.evaluate(()=>({sent:shotsSent,ink:__G.local.ink}));const receivedBefore=await other.evaluate(()=>shotsReceived);
@@ -59,13 +59,13 @@ const base=process.env.GAME_BASE_URL||'http://127.0.0.1:3000';
   await frames[1].waitForFunction(()=>__inkwave.match.netMenu===true);
   await frames[1].evaluate(()=>{__inkwave.controlGate?.update();});
   const pauseText=await frames[1].locator('body').innerText();console.log('PAUSE_MENU',pauseText.slice(-500));
-  const resume=frames[1].locator('button').filter({hasText:/^(继续|继续游戏|RESUME)$/i}).first();
+  const resume=frames[1].locator('button').filter({hasText:/^RESUME$/i}).first();
   await resume.click();await frames[1].waitForFunction(()=>!__inkwave.match.netMenu);
   await shoot(1);
   // Avoid losing the host's input on background focus for this side's firing assertion.
   await pages[0].bringToFront();
   if(await frames[0].evaluate(()=>!!__inkwave.match.netMenu)){
-   const resumeHost=frames[0].locator('button').filter({hasText:/^(继续|继续游戏|RESUME)$/i}).first();await resumeHost.click();
+   const resumeHost=frames[0].locator('button').filter({hasText:/^RESUME$/i}).first();await resumeHost.click();
   }
   await shoot(0);
   for(const f of frames)await f.evaluate(()=>__inkwave.lobby.leave());report.success=true;console.log(JSON.stringify(report,null,2));

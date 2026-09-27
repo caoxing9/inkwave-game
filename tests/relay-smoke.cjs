@@ -4,8 +4,8 @@ const { chromium } = require('/usr/local/lib/node_modules/playwright');
  try {
  const a=await browser.newPage(),b=await browser.newPage();
  for(const p of [a,b])await p.goto('http://127.0.0.1:3000/api/rooms?relay=1');
- const code=await a.evaluate(async()=>{const {LanClient}=await import('/game/src/net/lan.js');window.c=await LanClient.create('房主','shooter');return c.code});
- await b.evaluate(async code=>{const {LanClient}=await import('/game/src/net/lan.js');window.c=await LanClient.join(code,'队友','roller');window.packets=[];c.onPacket=d=>packets.push(d)},code);
+ const code=await a.evaluate(async()=>{const {LanClient}=await import('/game/src/net/lan.js');window.c=await LanClient.create('Host','shooter');return c.code});
+ await b.evaluate(async code=>{const {LanClient}=await import('/game/src/net/lan.js');window.c=await LanClient.join(code,'Teammate','roller');window.packets=[];c.onPacket=d=>packets.push(d)},code);
  await a.waitForFunction(()=>c.targets.length===1 && c.allConnected());
  await a.evaluate(()=>c.send({t:'relay-test',value:42}));
  await b.waitForFunction(()=>packets.some(d=>d.value===42));

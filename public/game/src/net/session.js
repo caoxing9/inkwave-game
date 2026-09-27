@@ -1,18 +1,18 @@
-// 对局同步。
+// Match synchronization.
 //
-// 权威划分（每个客户端只模拟自己"拥有"的角色）：
-//   · 玩家本人：自己角色的移动、血量、死亡、复活（手感零延迟）
-//   · 房主：所有机器人、比赛计时、状态切换、最终判定；玩家掉线后接管其角色
-//   · 伤害：开枪者一方判定命中（所见即所得），把伤害发给受害者的拥有者结算
-//   · 涂墨：谁的子弹谁涂，每次涂墨（位置/半径/种子）广播给所有人照做 → 各端墨迹一致
+// Authority split (each client only simulates the actors it "owns"):
+//   · Each player: their own actor's movement, health, death and respawn (zero-latency feel)
+//   · Host: all bots, match timer, phase changes and final result; takes over a player's actor on disconnect
+//   · Damage: the shooter decides hits (what you see is what you get) and sends damage to the victim's owner
+//   · Ink: whoever fired the shot paints; every paint (position/radius/seed) is broadcast and replayed → ink matches everywhere
 //
-// 非房主发出的包只到房主，房主再转发给其他人（星形拓扑）。
+// Packets from non-hosts only reach the host, which forwards them to everyone else (star topology).
 import * as THREE from 'three';
 import { G, emit } from '../core/ctx.js';
 import { PLAYER, MATCH, BOT_NAMES, WEAPON_ORDER, TEAM_PALETTES } from '../config.js';
 
 const BROADCAST = new Set(['st', 'f', 'bm', 'th', 'sp', 'kill', 'spc', 'adopt']);
-const INTERP = 0.1;        // 远端角色渲染延迟（秒）
+const INTERP = 0.1;        // render delay for remote actors (seconds)
 const STATE_HZ = 20;
 
 const F = { alive: 1, squid: 2, sub: 4, climb: 8, ground: 16, firing: 32, rolling: 64, special: 128, sj: 256, subAim: 512, invuln: 1024 };
@@ -38,7 +38,7 @@ export class NetSession {
   on(fn) { this.handlers.add(fn); return () => this.handlers.delete(fn); }
 
   // ------------------------------------------------------------------ lobby → match
-  // 房主：根据房间成员生成 10 人名单（真人按所选队伍，空位由机器人补齐），发送开局包
+  // Host: build the 10-actor roster from room members (humans on their chosen team, bots fill empty slots) and send the start packet
   buildStart(settings) {
     const members = this.client.members;
     const teams = [members.filter((m) => m.team === 0).slice(0, MATCH.teamSize), members.filter((m) => m.team === 1).slice(0, MATCH.teamSize)];
@@ -68,7 +68,7 @@ export class NetSession {
     this.stateT = this.splatT = this.clockT = 0;
   }
 
-  // Match.setup 之后调用：记录每个角色的归属
+  // Called after Match.setup: record who owns each actor
   attach(match) {
     this.match = match;
     this.byId.clear();
@@ -90,7 +90,7 @@ export class NetSession {
 
   _recv(d, from) {
     if (!d || typeof d.t !== 'string') return;
-    // 房主转发
+    // host forwards
     if (this.isHost && !this.client.serverRelays && from !== this.me) {
       if (BROADCAST.has(d.t)) for (const m of this.client.targets) if (m.id !== from) this.client.send(d, m.id);
       if (d.t === 'hit') {
@@ -131,7 +131,7 @@ export class NetSession {
     if (this.isHost && this.clockT >= 1 && m.state === 'playing') { this.clockT = 0; this.send({ t: 'ck', time: +m.time.toFixed(2) }); }
   }
 
-  // 房主切换比赛阶段时广播
+  // Broadcast when the host changes match phase
   hostState(s) { if (this.isHost) this.send({ t: 'ms', s, time: this.match ? +this.match.time.toFixed(2) : 0 }); }
   hostResult(result) {
     if (!this.isHost) return;
@@ -158,7 +158,7 @@ export class NetSession {
     }
   }
 
-  // 代替 actor.update：按缓冲插值，驱动动画
+  // Replaces actor.update: interpolate from the buffer and drive animation
   remoteUpdate(a, dt) {
     const r = a.remote;
     if (!r.buf.length) { a.character.setVisible(false); return; }
@@ -171,11 +171,11 @@ export class NetSession {
     const flags = last[9];
     const alive = !!(flags & F.alive);
     if (!alive) {
-      if (a.alive) a.splat(null, 'net');     // 丢了 kill 包时的兜底
+      if (a.alive) a.splat(null, 'net');     // fallback if the kill packet was lost
       a.respawnTimer = Math.max(0, a.respawnTimer - dt);
       return;
     }
-    if (!a.alive) {                          // 复活
+    if (!a.alive) {                          // respawn
       this.mute++; try { a.respawn(); } finally { this.mute--; }
       r.buf = r.buf.slice(-1);
       a.pos.set(last[1], last[2], last[3]);
@@ -201,7 +201,7 @@ export class NetSession {
     a.hp = last[12]; a.ink = last[13]; a.special = last[14];
     a.stats.turf = last[15];
     a.specialActive = flags & F.special ? (a.specialActive || { id: a.weapon.special, t: 0, phase: 'net' }) : null;
-    // 地面墨迹（脚步声/特效用）
+    // ground ink (for footsteps/effects)
     a._surface?.();
     a._finishFrame(dt);
   }
@@ -237,7 +237,7 @@ export class NetSession {
       orig(c, s[3], s[4], opts);
     }
   }
-  // 在"非本机权威"的逻辑里运行 fn 时不涂墨（墨迹由拥有者广播过来）
+  // Run fn without painting for logic this client is not authoritative for (the owner broadcasts the ink)
   muted(owner, fn) {
     if (!owner || owner.netAuth) return fn();
     this.mute++;
@@ -263,7 +263,7 @@ export class NetSession {
   onSpecial(a, id) { if (a.netAuth) this.send({ t: 'spc', a: a.netId, id }); }
 
   // ------------------------------------------------------------------ damage / death
-  // 攻击方权威：命中非本机角色时，把伤害发给它的拥有者
+  // Attacker authority: when hitting a non-local actor, send the damage to its owner
   sendHit(attacker, victim, dmg, weaponId) {
     const key = victim.netId + '|' + attacker.netId + '|' + weaponId;
     this.hitAcc.set(key, (this.hitAcc.get(key) || 0) + dmg);
@@ -286,7 +286,7 @@ export class NetSession {
     emit('hit', { attacker: a, victim: v, damage: d.d, killed, weaponId: d.w });
   }
 
-  // 拥有者判定死亡后广播
+  // Broadcast after the owner confirms the death
   onSplatted(victim, attacker, cause) {
     if (!victim.netAuth) return;
     this.send({ t: 'kill', v: victim.netId, a: attacker ? attacker.netId : null, c: cause });

@@ -1,4 +1,4 @@
-/* 联机大厅 */
+/* Multiplayer lobby */
 .iwl { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px;
   background: radial-gradient(ellipse at 50% 40%, rgba(20, 16, 50, 0.45), rgba(8, 8, 24, 0.82)); font-family: 'Rubik', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; color: #fff; overflow: auto; }
 .iwl.hidden { display: none; }
@@ -48,5 +48,5 @@
 .iwl-toast { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 60; background: rgba(20, 16, 44, 0.95); color: #fff;
   padding: 10px 18px; border-radius: 12px; font: 600 15px 'Rubik', 'PingFang SC', 'Microsoft YaHei', sans-serif; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
 
-/* 主菜单多了"联机对战"一项：说明文字下移一格 */
+/* The main menu has an extra "Multiplayer" entry: move the description down one row */
 .iw-main__desc { top: calc(52% + var(--u) * 22.3) !important; }

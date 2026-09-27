@@ -35,11 +35,11 @@ function handleRooms(body) {
   const b = body || {};
   if (b.action === 'create' || b.action === 'join') {
     const name = cleanName(b.name);
-    if (!name) return [400, { error: '请输入昵称' }];
+    if (!name) return [400, { error: 'Please enter a nickname' }];
     const member = { id: randomUUID(), token: randomBytes(24).toString('hex'), name, team: 0, weapon: WEAPONS.has(b.weapon) ? b.weapon : 'shooter', seen: Date.now() };
     let room;
     if (b.action === 'create') {
-      if (rooms.size >= 100) return [429, { error: '房间数量已满，请稍后再试' }];
+      if (rooms.size >= 100) return [429, { error: 'Too many rooms right now. Please try again later' }];
       let code;
       do { code = randomBytes(2).toString('hex').toUpperCase(); } while (rooms.has(code));
       room = { code, host: member.id, members: [member], signals: [], seq: 0, started: false, updated: Date.now(),
@@ -47,9 +47,9 @@ function handleRooms(body) {
       rooms.set(code, room);
     } else {
       room = rooms.get(String(b.code || '').trim().toUpperCase());
-      if (!room) return [404, { error: '房间不存在或已关闭，请检查房间码' }];
-      if (room.started) return [409, { error: '对战已开始，请等这局结束' }];
-      if (room.members.length >= MAX_MEMBERS) return [409, { error: `房间已满（${MAX_MEMBERS} 人）` }];
+      if (!room) return [404, { error: 'Room not found or closed. Check the room code' }];
+      if (room.started) return [409, { error: 'The match has already started. Please wait for it to end' }];
+      if (room.members.length >= MAX_MEMBERS) return [409, { error: `The room is full (${MAX_MEMBERS} players)` }];
       member.team = balancedTeam(room);
       room.members.push(member);
     }
@@ -58,9 +58,9 @@ function handleRooms(body) {
   }
 
   const room = rooms.get(String(b.code || ''));
-  if (!room) return [404, { error: '房间已关闭，请返回大厅重新创建' }];
+  if (!room) return [404, { error: 'The room is closed. Go back to the lobby and create a new one' }];
   const me = auth(room, String(b.id || ''), String(b.token || ''));
-  if (!me) return [403, { error: '房间身份已失效' }];
+  if (!me) return [403, { error: 'Your room session has expired' }];
   me.seen = room.updated = Date.now();
   const isHost = me.id === room.host;
 
@@ -68,14 +68,14 @@ function handleRooms(body) {
     case 'poll': break;
     case 'signal': {
       // star topology: host ↔ each member only
-      if (!room.members.some((m) => m.id === b.to) || (!isHost && b.to !== room.host)) return [400, { error: '无效连接目标' }];
+      if (!room.members.some((m) => m.id === b.to) || (!isHost && b.to !== room.host)) return [400, { error: 'Invalid connection target' }];
       room.signals.push({ seq: ++room.seq, from: me.id, to: b.to, data: b.data });
       if (room.signals.length > 1024) room.signals = room.signals.slice(-1024);
       break;
     }
     case 'fallback': {
       const target = isHost ? b.to : me.id;
-      if (target === room.host || !room.members.some((m) => m.id === target)) return [400, { error: '无效中转目标' }];
+      if (target === room.host || !room.members.some((m) => m.id === target)) return [400, { error: 'Invalid relay target' }];
       room.relay.add(target);
       break;
     }
@@ -83,37 +83,37 @@ function handleRooms(body) {
       if (b.name) me.name = cleanName(b.name) || me.name;
       if (WEAPONS.has(b.weapon)) me.weapon = b.weapon;
       if (b.team === 0 || b.team === 1) {
-        if (room.members.filter((m) => m.team === b.team && m !== me).length >= 5) return [409, { error: '该队伍已满（5 人）' }];
+        if (room.members.filter((m) => m.team === b.team && m !== me).length >= 5) return [409, { error: 'That team is full (5 players)' }];
         me.team = b.team;
       }
       break;
     }
     case 'settings': {
-      if (!isHost) return [403, { error: '只有房主可以修改对局设置' }];
+      if (!isHost) return [403, { error: 'Only the host can change match settings' }];
       const s = b.settings || {};
       if (typeof s.mapId === 'string') room.settings.mapId = s.mapId.slice(0, 32);
       if ([90, 180].includes(s.duration)) room.settings.duration = s.duration;
       if (['easy', 'normal', 'hard'].includes(s.difficulty)) room.settings.difficulty = s.difficulty;
       break;
     }
-    case 'start': if (!isHost) return [403, { error: '只有房主可以开始' }]; room.started = true; break;
+    case 'start': if (!isHost) return [403, { error: 'Only the host can start the match' }]; room.started = true; break;
     case 'end': if (isHost) room.started = false; break;
     case 'leave':
       if (isHost) rooms.delete(room.code);
       else { room.members = room.members.filter((m) => m.id !== me.id); room.relay.delete(me.id); }
       return [200, { ok: true }];
-    default: return [400, { error: '未知操作' }];
+    default: return [400, { error: 'Unknown action' }];
   }
 
-  // ---- HTTP 兼容中转：客户端把发往（经）房主的数据包随 poll 一起提交，下次 poll 取回发给自己的包
+  // ---- HTTP fallback relay: clients submit packets for (or via) the host with each poll, and fetch their own packets on the next poll
   if (b.action === 'poll') {
     const incoming = Array.isArray(b.packets) ? b.packets : [];
-    if (incoming.length > 64) return [400, { error: '中转消息过多' }];
+    if (incoming.length > 64) return [400, { error: 'Too many relay messages' }];
     const since = Number(b.packetSince) || 0;
     const now = Date.now();
     room.packets = room.packets.filter((p) => now - p.at < 30000 && !(p.to === me.id && p.seq <= since));
     for (const p of incoming) {
-      if (!Number.isSafeInteger(p?.id) || p.id <= (room.lastPacket[me.id] || 0)) continue;   // 重试去重
+      if (!Number.isSafeInteger(p?.id) || p.id <= (room.lastPacket[me.id] || 0)) continue;   // dedupe retries
       room.lastPacket[me.id] = p.id;
       const peer = isHost ? p.to : me.id;
       if (typeof p.to !== 'string' || (!isHost && p.to !== room.host) || !room.relay.has(peer)) continue;
@@ -139,11 +139,11 @@ export async function GET(req) {
   return Response.json({ multiplayer: localOnly(req), mode: localOnly(req) ? 'lan-server' : 'public-peer' }, { headers: { 'Cache-Control': 'no-store' } });
 }
 export async function POST(req) {
-  if (!localOnly(req)) return Response.json({ error: '公开站点请使用免费信令直连模式。服务器中转请下载局域网版。' }, { status: 503 });
+  if (!localOnly(req)) return Response.json({ error: 'The public site uses free direct signaling. Download the LAN version for server relay.' }, { status: 503 });
   try {
     const raw = await req.text();
-    if (raw.length > 200000) return Response.json({ error: '请求过大' }, { status: 413 });
+    if (raw.length > 200000) return Response.json({ error: 'Request too large' }, { status: 413 });
     const [status, data] = handleRooms(JSON.parse(raw));
     return Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
-  } catch { return Response.json({ error: '请求格式无效' }, { status: 400 }); }
+  } catch { return Response.json({ error: 'Invalid request format' }, { status: 400 }); }
 }

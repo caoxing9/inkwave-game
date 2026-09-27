@@ -13,7 +13,7 @@ const assert=require('node:assert/strict');
    game.input.canvas.requestPointerLock=()=>Promise.reject(new DOMException('Test browser denial','NotAllowedError'));gate.update();
   });
   await p.locator('#iw-control-enter').click();
-  await p.getByText(/浏览器尚未允许鼠标控制/).waitFor();assert.equal(await p.locator('#iw-control-enter').isEnabled(),true);
+  await p.getByText(/browser has not allowed mouse control/).waitFor();assert.equal(await p.locator('#iw-control-enter').isEnabled(),true);
   assert.equal(await p.evaluate(()=>game.input.mouse.left),false);assert.equal(await p.evaluate(()=>unlocks),0);
   await p.evaluate(()=>{game.input.canvas.requestPointerLock=originalLock;});await p.locator('#iw-control-enter').click();
   await p.waitForFunction(()=>document.pointerLockElement===game.input.canvas&&game.input.locked);assert.equal(await p.locator('#iw-control-enter').isVisible(),false);

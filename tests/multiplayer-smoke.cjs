@@ -5,9 +5,9 @@ const assert = require('node:assert/strict');
  try {
  const a = await browser.newPage(), b = await browser.newPage();
  for (const p of [a,b]) { await p.goto('http://127.0.0.1:3000/api/rooms'); await p.addScriptTag({url:'/game/vendor/peerjs.min.js'}); }
- const code = await a.evaluate(async()=>{const {PublicClient}=await import('/game/src/net/public.js');window.c=await PublicClient.create('房主','shooter');window.packets=[];c.onPacket=(d)=>packets.push(d);return c.code;});
+ const code = await a.evaluate(async()=>{const {PublicClient}=await import('/game/src/net/public.js');window.c=await PublicClient.create('Host','shooter');window.packets=[];c.onPacket=(d)=>packets.push(d);return c.code;});
  console.log('Public room',code);
- await b.evaluate(async(code)=>{const {PublicClient}=await import('/game/src/net/public.js');window.c=await PublicClient.join(code,'队友','roller');window.packets=[];c.onPacket=(d)=>packets.push(d);},code);
+ await b.evaluate(async(code)=>{const {PublicClient}=await import('/game/src/net/public.js');window.c=await PublicClient.join(code,'Teammate','roller');window.packets=[];c.onPacket=(d)=>packets.push(d);},code);
  await a.waitForFunction(()=>c.members.length===2 && c.allConnected());
  await a.waitForFunction(()=>[...c.stateChannels.values()].some(ch=>ch.readyState==='open'),null,{timeout:30000});
  await b.waitForFunction(()=>[...c.stateChannels.values()].some(ch=>ch.readyState==='open'),null,{timeout:30000});

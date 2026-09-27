@@ -6,8 +6,8 @@ import { ErrorReporter, ConsoleReporter, ReactErrorBoundary } from "@/components
 import { AppAnalytics } from "@/components/app-analytics"
 
 export const metadata: Metadata = {
-  title: "INKWAVE · 墨浪对战",
-  description: "和朋友一起加入 4v4 涂墨对战，创建房间、选择武器，争夺属于你们的地盘。",
+  title: "INKWAVE · Turf War",
+  description: "Join a 5v5 ink turf war with friends: create a room, pick your weapon and claim the turf.",
   icons: "/favicon.ico",
 };
 
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <body className="font-sans antialiased">
         <ReactErrorBoundary>
           {children}

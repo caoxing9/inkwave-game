@@ -17,9 +17,9 @@ const {chromium}=require('/usr/local/lib/node_modules/playwright');
    const p=await browser.newPage();await p.route('**/api/multiplayer-status',r=>r.fulfill({json:{state}}));
    await p.goto('http://127.0.0.1:3000/api/rooms'+query);await p.setContent('<html><body></body></html>');
    await p.addScriptTag({type:'importmap',content:JSON.stringify({imports:{three:'/game/vendor/three/engine/three.module.js'}})});
-   await p.evaluate(async()=>{const {Lobby}=await import('/game/src/net/lobby.js');window.lobby=new Lobby({api:{getProfile:()=>({name:'玩家'}),getLoadout:()=>({weapon:'shooter'}),setProfileName:()=>{},setLoadout:()=>{}},menus:{show:()=>{}}});await lobby.open();});
+   await p.evaluate(async()=>{const {Lobby}=await import('/game/src/net/lobby.js');window.lobby=new Lobby({api:{getProfile:()=>({name:'Player'}),getLoadout:()=>({weapon:'shooter'}),setProfileName:()=>{},setLoadout:()=>{}},menus:{show:()=>{}}});await lobby.open();});
    assert.equal(await p.locator('#iwl-mode').inputValue(),mode);assert.equal(await p.locator('#iwl-server').isVisible(),mode==='wss');
-   if(state==='unknown')assert((await p.locator('.iwl').innerText()).includes('无法确认'));
+   if(state==='unknown')assert((await p.locator('.iwl').innerText()).includes('Unable to confirm'));
    if(query.includes('server=')){
     assert.equal(await p.locator('#iwl-code').inputValue(),'ABCDEF');
     await p.locator('#iwl-mode').selectOption('public');

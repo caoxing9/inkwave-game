@@ -1,6 +1,7 @@
 {
   "name": "teable-generated-app",
   "private": true,
+  "license": "MIT",
   "teable": {
     "templateVersion": "0.7.0",
     "migrationVersion": 2

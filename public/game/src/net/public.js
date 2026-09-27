@@ -4,12 +4,12 @@ const STATE_BACKLOG = 16 * 1024;
 const ICE = [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:global.stun.twilio.com:3478' }];
 const PREFIX = 'inkwave-appjcivu396tfuzemb1-v1-';
 const weapons = new Set(['shooter', 'roller', 'charger', 'blaster']);
-const cleanName = v => String(v || '玩家').replace(/[^\p{L}\p{N}_ .-]/gu, '').trim().slice(0, 16) || '玩家';
+const cleanName = v => String(v || 'Player').replace(/[^\p{L}\p{N}_ .-]/gu, '').trim().slice(0, 16) || 'Player';
 
 export class PublicClient {
   static async create(name, weapon, _server, progress) { return this.open(true, '', name, weapon, progress); }
   static async join(code, name, weapon, _server, _key, progress) {
-    if (!/^[A-F0-9]{6}$/i.test(code)) throw new Error('请输入 6 位房间码');
+    if (!/^[A-F0-9]{6}$/i.test(code)) throw new Error('Please enter a 6-character room code');
     return this.open(false, code.toUpperCase(), name, weapon, progress);
   }
   static async open(host, code, name, weapon, progress) {
@@ -39,66 +39,66 @@ export class PublicClient {
   get targets() { return this.members.filter(m => m.id !== this.id && (this.isHost || m.id === this.room.host)); }
   connected(id) { return this.channels.get(id)?.open === true; }
   allConnected() { return this.targets.every(m => this.connected(m.id)); }
-  status() { return this.targets.map(m => ({ id: m.id, name: m.name, via: this.connected(m.id) ? 'direct' : 'connecting', stage: this.stages.get(m.id) || '等待公共信令交换', ping: Date.now() - (this.lastPong.get(m.id) || 0) < 5000 ? this.latency.get(m.id) : undefined })); }
+  status() { return this.targets.map(m => ({ id: m.id, name: m.name, via: this.connected(m.id) ? 'direct' : 'connecting', stage: this.stages.get(m.id) || 'Waiting for public signaling exchange', ping: Date.now() - (this.lastPong.get(m.id) || 0) < 5000 ? this.latency.get(m.id) : undefined })); }
   stage(id, text) { this.stages.set(id,text); this.debug.log('connection',text,{peer:id===this.room.host?'host':'member'}); this.progress(text); this.onStatus(); }
   open() {
     return new Promise((resolve, reject) => {
       this.resolve = resolve; this.reject = reject;
-      this.stage('server','正在连接公共信令服务器…');
-      this.deadline = setTimeout(() => this.fail(this.signalingOpened ? '公共信令已连接，但未能与房主建立直连。请确认房主在线；可换到同一网络后手动重试。' : '30 秒内未能连接公共信令服务器（0.peerjs.com）。请检查网络后手动重试，或导出连接日志。'), 30000);
+      this.stage('server','Connecting to the public signaling server…');
+      this.deadline = setTimeout(() => this.fail(this.signalingOpened ? 'Connected to public signaling, but could not reach the host directly. Make sure the host is online; you can switch to the same network and retry.' : 'Could not reach the public signaling server (0.peerjs.com) within 30 seconds. Check your network and retry, or export the connection log.'), 30000);
       this.peer = new window.Peer(this.id, { host: '0.peerjs.com', port: 443, secure: true, path: '/', key: 'peerjs', debug: 0, config: { iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:global.stun.twilio.com:3478' }] } });
       this.peer.on('open', () => {
         if (this.closed) return;
         this.signalingOpened = true;
-        this.stage('server','公共信令已连接');
+        this.stage('server','Public signaling connected');
         if (this.opened) return;
         if (this.isHost) this.ready();
         else {
-          this.stage(this.room.host,'信令已就绪，正在联系房主…');
+          this.stage(this.room.host,'Signaling ready, contacting the host…');
           this.bind(this.peer.connect(this.room.host, { reliable: true, serialization: 'json', metadata: { protocol: 'inkwave-v1', name: this.profile.name, weapon: this.profile.weapon } }), false);
         }
       });
       this.peer.on('connection', c => { if (!this.isHost || c.metadata?.protocol !== 'inkwave-v1') c.close(); else this.bind(c, true); });
       this.peer.on('error', e => {
         if (this.closed) return;
-        this.debug.log('signaling','公共信令错误',{type:e.type});
-        const message = e.type === 'peer-unavailable' ? '找不到房间，请检查房间码，并确认房主仍在线。' : e.type === 'unavailable-id' ? '房间码已被占用，请重新创建。' : `联机连接失败（${e.type}），请重试或使用局域网版。`;
+        this.debug.log('signaling','Public signaling error',{type:e.type});
+        const message = e.type === 'peer-unavailable' ? 'Room not found. Check the room code and make sure the host is still online.' : e.type === 'unavailable-id' ? 'That room code is already taken. Please create a new room.' : `Connection failed (${e.type}). Please retry or use the LAN version.`;
         if (this.reject) this.fail(message); else this.onError(message, false);
       });
-      this.peer.on('disconnected', () => { if (!this.closed) this.stage('server','信令连接中断；已建立的直连可继续，最多尝试恢复 3 次'); });
+      this.peer.on('disconnected', () => { if (!this.closed) this.stage('server','Signaling disconnected; existing direct connections continue. Retrying up to 3 times'); });
       this.heartbeat = setInterval(() => {
         if (this.peer.disconnected && !this.peer.destroyed && this.reconnects < 3 && Date.now()-this.lastReconnect >= 5000) {
           this.reconnects++;this.lastReconnect=Date.now();
-          this.debug.log('signaling','尝试恢复公共信令',{attempt:this.reconnects});
+          this.debug.log('signaling','Retrying public signaling',{attempt:this.reconnects});
           try { this.peer.reconnect(); } catch {}
         }
         this.send({ _iw: 'ping', at: Date.now() }); this.onStatus();
       }, 1500);
     });
   }
-  ready() { this.opened = true; this.debug.log('room',this.isHost?'房间创建成功':'房主确认加入');clearTimeout(this.deadline); this.resolve?.(); this.resolve = null; this.reject = null; }
+  ready() { this.opened = true; this.debug.log('room',this.isHost?'Room created':'Host accepted join');clearTimeout(this.deadline); this.resolve?.(); this.resolve = null; this.reject = null; }
   fail(message) { if(this.closed)return;this.debug.log('error',message);this.reject?.(new Error(message)); this.reject = null; this.resolve = null; this.close(); this.onError(message, true); }
   bind(conn, incoming) {
     const id = conn.peer;
     if (this.channels.has(id)) { conn.close(); return; }
     this.channels.set(id, conn);
-    this.stage(id,incoming?'收到玩家连接请求':'正在检测玩家直连路径');
+    this.stage(id,incoming?'Received player connection request':'Checking direct path to player');
     traceConnection(conn.peerConnection,this.debug,'events');
     const deadline=setTimeout(()=>{
       this.connectionTimers.delete(deadline);
       if(this.closed||conn.open)return;
-      this.stage(id,'玩家直连超时，数据通道未打开');
-      if(!this.isHost)this.fail('信令已交换，但玩家直连失败。请尝试同一网络，或双方导出连接日志。');
+      this.stage(id,'Direct connection to player timed out; data channel did not open');
+      if(!this.isHost)this.fail('Signaling exchanged, but the direct connection failed. Try the same network, or have both players export connection logs.');
       else conn.close();
     },30000);
     this.connectionTimers.add(deadline);
     conn.on('open', () => {
       clearTimeout(deadline);this.connectionTimers.delete(deadline);
       if (this.closed) { conn.close(); return; }
-      this.stage(id,'WebRTC 数据通道已连接');
+      this.stage(id,'WebRTC data channel connected');
       if (incoming) {
         if (this.room.started || this.members.length >= 10) {
-          conn.send({ _iw: 'reject', message: this.room.started ? '对战已开始，请等下一局。' : '房间已满（10 人）。' });
+          conn.send({ _iw: 'reject', message: this.room.started ? 'The match has already started. Please wait for the next one.' : 'The room is full (10 players).' });
           setTimeout(() => conn.close(), 500); return;
         }
         const a = this.members.filter(m => m.team === 0).length;
@@ -130,13 +130,13 @@ export class PublicClient {
       if (d._iw === 'response' && !this.isHost) { const p = this.pending.get(d.key); if (p) { clearTimeout(p.timer); this.pending.delete(d.key); d.error ? p.reject(new Error(d.error)) : p.resolve({ room: d.room }); } return; }
       if (!d._iw) this.onPacket(d, id);
     });
-    conn.on('error', () => this.onError('玩家连接异常，请检查网络。', false));
+    conn.on('error', () => this.onError('Player connection error. Please check your network.', false));
     conn.on('close', () => {
       clearTimeout(deadline);this.connectionTimers.delete(deadline);
-      this.debug.log('webrtc','数据通道关闭');
+      this.debug.log('webrtc','Data channel closed');
       this.channels.delete(id); this.statePeers.get(id)?.close(); this.statePeers.delete(id); this.stateChannels.delete(id); this.statePending.delete(id); if (this.closed) return;
       if (this.isHost) { this.room.members = this.members.filter(m => m.id !== id); this.broadcast(); this.onPacket({ t: 'leave' }, id); }
-      else this.fail('房主已离开或连接中断，请重新加入房间。');
+      else this.fail('The host left or the connection dropped. Please rejoin the room.');
     });
   }
   async initState(id, offer = false) {
@@ -214,43 +214,43 @@ export class PublicClient {
   }
   action(id, action, extra) {
     const me = this.members.find(m => m.id === id);
-    if (!me) throw new Error('房间身份已失效');
+    if (!me) throw new Error('Your room session has expired');
     if (action === 'profile') {
-      if (this.room.started) throw new Error('请在本局结束后更换配置');
+      if (this.room.started) throw new Error('Change your loadout after this match ends');
       if ([0, 1].includes(extra.team)) {
-        if (this.members.filter(m => m.id !== id && m.team === extra.team).length >= 5) throw new Error('该队伍已满（5 人）');
+        if (this.members.filter(m => m.id !== id && m.team === extra.team).length >= 5) throw new Error('That team is full (5 players)');
         me.team = extra.team;
       }
       if (weapons.has(extra.weapon)) me.weapon = extra.weapon;
       if (extra.name) me.name = cleanName(extra.name);
     } else if (['settings', 'start', 'end'].includes(action)) {
-      if (id !== this.room.host) throw new Error('只有房主可以执行此操作');
+      if (id !== this.room.host) throw new Error('Only the host can do that');
       if (action === 'settings') {
         const s = extra.settings || {};
         if (['tidewater', 'kelpline', 'sunset'].includes(s.mapId)) this.room.settings.mapId = s.mapId;
         if ([90, 180].includes(s.duration)) this.room.settings.duration = s.duration;
         if (['easy', 'normal', 'hard'].includes(s.difficulty)) this.room.settings.difficulty = s.difficulty;
       } else {
-        if (action === 'start' && !this.allConnected()) throw new Error('请等待所有玩家连接');
+        if (action === 'start' && !this.allConnected()) throw new Error('Wait for all players to connect');
         this.room.started = action === 'start';
       }
-    } else throw new Error('未知操作');
+    } else throw new Error('Unknown action');
     this.broadcast(); return { room: this.room };
   }
   async request(action, extra = {}) {
-    if (this.closed) throw new Error('房间连接已关闭');
+    if (this.closed) throw new Error('Room connection closed');
     if (this.isHost) return this.action(this.id, action, extra);
     const key = randomClientId();
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { this.pending.delete(key); reject(new Error('房主响应超时，请重试')); }, 8000);
+      const timer = setTimeout(() => { this.pending.delete(key); reject(new Error('The host did not respond. Please retry')); }, 8000);
       this.pending.set(key, { resolve, reject, timer }); this.send({ _iw: 'request', key, action, extra });
     });
   }
   close() {
     if (this.closed) return;
     this.closed = true; for(const t of this.connectionTimers)clearTimeout(t);this.connectionTimers.clear(); clearInterval(this.stateTimer); for (const pc of this.statePeers.values()) pc.close(); this.statePeers.clear(); this.statePending.clear(); clearTimeout(this.deadline); clearInterval(this.heartbeat); removeEventListener('pagehide', this.unload);
-    for (const p of this.pending.values()) { clearTimeout(p.timer); p.reject(new Error('连接已关闭')); }
+    for (const p of this.pending.values()) { clearTimeout(p.timer); p.reject(new Error('Connection closed')); }
     this.pending.clear(); for (const c of this.channels.values()) c.close(); this.peer?.destroy();
-    this.debug.log('session','连接会话已关闭');this.debug.flush();
+    this.debug.log('session','Connection session closed');this.debug.flush();
   }
 }
