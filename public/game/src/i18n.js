@@ -151,8 +151,14 @@ const PATTERNS = [
 ];
 
 const LANG_KEY = 'inkwave.lang';
-let lang = 'zh';
-try { lang = localStorage.getItem(LANG_KEY) || 'zh'; } catch { /* private mode */ }   // 默认中文
+// Use the browser's primary language, not a secondary language in its list.
+const browserLanguage = navigator.language || navigator.languages?.[0] || 'en';
+const browserDefault = /^zh(?:[-_]|$)/i.test(browserLanguage) ? 'zh' : 'en';
+let lang = browserDefault;
+try {
+  const saved = localStorage.getItem(LANG_KEY);
+  if (saved === 'zh' || saved === 'en') lang = saved;
+} catch { /* Browser detection also works when storage is unavailable. */ }
 
 const originals = new WeakMap();   // text node → original English
 const UPPER = new Map(Object.entries(ZH).map(([k, v]) => [k.toUpperCase(), v]));
@@ -211,6 +217,7 @@ export function installI18n() {
   label();
   btn.onclick = () => { setLang(lang === 'zh' ? 'en' : 'zh'); label(); };
   document.body.appendChild(btn);
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   if (lang === 'zh') start();
 }
 
