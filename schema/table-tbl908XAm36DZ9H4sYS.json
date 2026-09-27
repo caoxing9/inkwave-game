@@ -171,7 +171,8 @@
         "音效",
         "封面",
         "程序生成",
-        "字体"
+        "字体",
+        "射击特效"
       ],
       "cellValueType": "string",
       "isLookup": null,
