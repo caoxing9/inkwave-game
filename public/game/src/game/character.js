@@ -26,6 +26,7 @@ import {
   getGlassMaterial, makeInkFillMaterial, makeSquidMaterial, getPlasticMaterial, getInkMaterial, makeGlowMaterial,
 } from './character-mats.js';
 import { getWeaponDef, getSubDef, FIST_OFFSET, WEAPON_KINDS } from './character-weapons.js';
+import { syncModel, releaseWeapon, disposeModel } from './character-model.js';
 
 // ------------------------------------------------------------------------------------------------
 // Style tables
@@ -511,6 +512,7 @@ export class Character {
   setWeapon(kind) {
     if (!HOLD[kind]) kind = 'shooter';
     if (kind === this.weaponKind) return;
+    releaseWeapon(this);
     if (this.weaponKind && this.weapons[this.weaponKind]) this.bones.handR.remove(this.weapons[this.weaponKind].pivot);
     const w = this._getWeapon(kind);
     this.bones.handR.add(w.pivot);
@@ -596,6 +598,7 @@ export class Character {
   dispose() {
     this.root.parent?.remove(this.root);
     for (const k of ['skin', 'cloth', 'hair', 'eye', 'fill', 'squid', 'squidGhost', 'glow']) this.mats[k].dispose();
+    disposeModel(this);
     this.skeleton.dispose();
   }
 
@@ -651,6 +654,7 @@ export class Character {
       this._buildPose(dt, s);
       this._applyPose(dt, s);
     } else { this.feetValid = false; this.headInit = false; }
+    syncModel(this);
     this._updateSquid(dt, s);
     this._updateMaterials(dt, s);
   }

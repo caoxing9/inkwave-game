@@ -36,6 +36,10 @@ The bottom-left corner shows frame rate, latency, the active channel and congest
 
 Deploying the WSS server is handled separately by the PLAYROOM app. Publishing this web app does not mean the server is deployed or that performance has been validated on 10 real devices. Game simulation and GPU load still depend on each player's device — especially the host, who runs the bots.
 
+## Credits
+
+The player character model (`public/game/assets/characters/alchemist.glb`) is an original design generated with AI (Tencent Hunyuan 3D) and coloured from its concept art.
+
 ## License
 
 [MIT](LICENSE)
